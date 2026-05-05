@@ -17,16 +17,25 @@ Tính năng này cập nhật số chỗ còn lại theo thời gian thực bằ
 ### Virtual queue
 
 1. Sinh viên vào màn hình đăng ký trong giờ cao điểm.
-2. Frontend xin queue token.
-3. Redis quản lý thứ tự/cửa sổ token.
-4. Backend chỉ nhận registration request có token hợp lệ.
-5. Token hết hạn hoặc dùng sai user/workshop bị từ chối.
+2. Frontend xin queue token từ Backend API.
+3. Redis quản lý thứ tự/cửa sổ token (lưu `{user_id, workshop_id, issued_at, expires_at}`).
+4. Backend chỉ nhận registration request có token hợp lệ (TTL = 120 giây).
+5. Token hết hạn hoặc dùng sai user/workshop bị từ chối; token đã dùng bị xóa khỏi Redis ngay lập tức.
 
 ### Rate limit
 
+**Thuật toán:** Token Bucket — Redis lưu `(tokens, last_refill_ts)` theo key; mỗi giây nạp lại `refill_rate` token, mỗi request tiêu 1 token.
+
+| Endpoint tier | Key | Burst (capacity) | Refill rate | Hành vi vượt ngưỡng |
+| --- | --- | --- | --- | --- |
+| Công khai (xem lịch) | `ip` | 60 | 10/s | `429` + `Retry-After: 5s` |
+| Đăng nhập | `ip` | 10 | 1/s | `429` + `Retry-After: 10s` |
+| Đăng ký workshop | `user_id+workshop_id` | 5 | 1/30s | `429` + `Retry-After: 30s` |
+| Admin thao tác | `user_id` | 30 | 5/s | `429` + `Retry-After: 5s` |
+
 1. Mỗi request đi qua rate limit middleware.
-2. Redis lưu token bucket/counter theo user/IP/endpoint.
-3. Nếu vượt ngưỡng, API trả `429` và `Retry-After`.
+2. Middleware đọc/ghi `(tokens, last_refill_ts)` từ Redis theo key tương ứng tier.
+3. Nếu tokens > 0: giảm 1 token, cho qua. Nếu tokens = 0: trả `429` kèm `Retry-After`.
 
 ## Kịch bản lỗi
 

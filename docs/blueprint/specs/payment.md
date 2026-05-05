@@ -32,7 +32,7 @@ Tính năng payment xử lý workshop có phí bằng payment intent bất đồ
 - `payment_intent_id` là unique.
 - Webhook phải xác thực chữ ký.
 - Không xác nhận registration chỉ dựa vào kết quả client redirect.
-- Circuit breaker phải có trạng thái Closed, Open, Half-Open.
+- Circuit breaker phải có trạng thái Closed, Open, Half-Open với ngưỡng: 5 lỗi liên tiếp trong 30s → Open; chờ 30s → Half-Open; 3 probe thành công → Closed.
 
 ## Tiêu chí chấp nhận
 

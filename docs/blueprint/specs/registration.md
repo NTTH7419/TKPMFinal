@@ -1,4 +1,4 @@
-# Đặc tả: Đăng ký workshop và giữ chỗ
+﻿# Đặc tả: Đăng ký workshop và giữ chỗ
 
 ## Mô tả
 
@@ -34,6 +34,7 @@ Tính năng registration cho phép sinh viên đăng ký workshop miễn phí ho
 - Một sinh viên chỉ có một registration active cho một workshop.
 - `confirmed_count + held_count` không được vượt `capacity`.
 - Số chỗ hiển thị realtime không phải source of truth; DB transaction mới quyết định cuối cùng.
+- `Idempotency-Key` trong `registrations` được giữ 24 giờ; mọi request cùng key trong thời gian đó đều trả lại kết quả cũ mà không tạo registration mới.
 
 ## Tiêu chí chấp nhận
 
