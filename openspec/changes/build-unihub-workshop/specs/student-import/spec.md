@@ -1,48 +1,115 @@
+# Delta for Student Import
+
 ## ADDED Requirements
 
-### Requirement: Nightly scheduler detects new CSV via checksum
-The system SHALL run a scheduled job (cron) every night, scan Supabase Storage for CSV files, compute SHA-256 checksums, and skip any file whose checksum already exists in `student_import_batches`.
+### Requirement: CSV-Based Student Data Import
+The system MUST import student data from CSV files exported by the legacy system, using a safe staging-then-promote workflow that protects production data from malformed files.
 
-#### Scenario: New CSV file detected
-- **WHEN** the scheduler runs and finds a CSV file with a checksum not present in the database
-- **THEN** a `student_import_batch` record is created with status=PARSING and an import job is published to the queue
+#### Scenario: Scheduler detects a new CSV file
+- GIVEN the legacy system exports a CSV file to the import folder or object storage
+- WHEN the scheduler detects a new file (by filename or checksum)
+- THEN a `student_import_batch` record is created with status `PARSING`
+- AND the CSV worker begins processing the file
 
-#### Scenario: Previously imported CSV file encountered
-- **WHEN** the scheduler finds a file whose checksum already exists in `student_import_batches`
-- **THEN** the file is skipped; no new batch is created
+#### Scenario: Worker parses a valid CSV file
+- GIVEN a new CSV file is detected
+- WHEN the worker parses the file in batches
+- THEN rows are inserted into the `student_import_rows` staging table
+- AND the worker validates headers, required fields, email format, student code format, duplicates, and status
+- AND each row is marked as valid or invalid with specific error details
 
-### Requirement: Batch sequential pipeline — parse, stage, validate, promote
-The system SHALL process the CSV in a sequential pipeline: parse each row into the `student_import_rows` staging table, validate headers and required fields and detect duplicates, then atomically promote valid rows into `students` if the error rate is below the threshold.
+---
 
-#### Scenario: Valid CSV file promoted successfully
-- **WHEN** the CSV is parsed and the error row percentage is below `error_threshold_pct`
-- **THEN** a transaction upserts all valid rows into the `students` table and the batch transitions to PROMOTED
+### Requirement: Staging-to-Production Promotion
+The system MUST only promote validated rows to the `students` table in an atomic transaction. Direct insertion into the `students` table is NOT allowed.
 
-#### Scenario: CSV file with excessive error rate
-- **WHEN** the CSV error row percentage exceeds `error_threshold_pct`
-- **THEN** the batch transitions to REJECTED and the `students` table remains unchanged
+#### Scenario: Batch with errors below threshold is promoted
+- GIVEN a parsed batch where invalid rows are below the configured error threshold
+- WHEN the worker triggers promotion
+- THEN the worker opens a database transaction
+- AND upserts valid rows into the `students` table
+- AND each student record gets `source_batch_id` and `last_seen_in_import_at` updated
+- AND the batch status transitions to `PROMOTED`
+- AND an admin report is generated
+
+#### Scenario: Batch with excessive errors is rejected
+- GIVEN a parsed batch where the error count exceeds the threshold (e.g., missing required columns)
+- WHEN the worker evaluates the batch
+- THEN the batch status is set to `REJECTED`
+- AND the `students` table remains unchanged
+
+---
+
+### Requirement: Duplicate File Detection
+The system MUST detect and skip CSV files that have already been imported.
+
+#### Scenario: Same file uploaded again
+- GIVEN a CSV file with a checksum matching a previously imported file
+- WHEN the scheduler detects the file
+- THEN the file is skipped or marked as `DUPLICATE`
+- AND no new batch is created
+
+---
+
+### Requirement: Per-Row Error Tracking
+The system MUST record validation errors at the row level so administrators can inspect which rows failed and why.
+
+#### Scenario: Individual rows fail validation
+- GIVEN a CSV row with an invalid email or missing student code
+- WHEN the worker validates the row
+- THEN the error is recorded in `student_import_rows` with the specific error detail
+- AND the row is NOT promoted to the `students` table
+
+#### Scenario: Admin reviews import results
+- GIVEN a batch has been processed (PROMOTED or REJECTED)
+- WHEN an admin views the batch report
+- THEN the admin sees the count of successful rows, failed rows, and error details per row
+
+---
+
+### Requirement: Worker Crash Recovery
+The system MUST handle worker crashes during parse and promote phases without data corruption.
+
+#### Scenario: Worker crashes during parsing
+- GIVEN the worker crashes while parsing a CSV file
+- WHEN the worker restarts
+- THEN it retries processing from the original file
 
 #### Scenario: Worker crashes during promotion
-- **WHEN** the worker process dies mid-transaction during atomic promotion
-- **THEN** the transaction rolls back automatically and the batch can be safely retried
+- GIVEN the worker crashes during the promotion transaction
+- WHEN the worker restarts
+- THEN the transaction is rolled back automatically
+- AND the `students` table remains unchanged
 
-### Requirement: Import does not disrupt the running system
-The system SHALL allow students to register for workshops normally while a CSV import job is in progress.
+---
 
-#### Scenario: Registration while import is running
-- **WHEN** an import batch is in PARSING or VALIDATING state
-- **THEN** the Registration API continues to operate normally using the current `students` table data
+### Requirement: Inactive Student Handling
+The system MUST NOT delete students who are absent from a new CSV import. Instead, they may be marked as `INACTIVE` per policy.
 
-### Requirement: Immediately mark absent students as INACTIVE
-The system SHALL mark `students.status = INACTIVE` within the same promotion transaction for any student_code that does not appear in the latest CSV file.
+#### Scenario: Previously imported student not in new CSV
+- GIVEN a student exists in the `students` table from a previous import
+- WHEN a new CSV import does not include that student
+- THEN the student is NOT deleted
+- AND may be transitioned to `INACTIVE` status based on configured policy
 
-#### Scenario: Student absent from the new CSV
-- **WHEN** a new CSV is successfully promoted and a student_code does not appear in it
-- **THEN** the corresponding student record is set to INACTIVE within the same promotion transaction
+---
 
-### Requirement: Batch report for Admins
-The system SHALL allow ORGANIZER and ADMIN to view a detailed report for each import batch: total_rows, valid_rows, error_rows, and a list of error rows with error_message.
+### Requirement: Non-Blocking Import
+The system MUST allow students to register for workshops while a CSV import is in progress.
 
-#### Scenario: View batch report
-- **WHEN** an ORGANIZER calls `GET /admin/imports/students/:batchId`
-- **THEN** the backend returns full batch metadata and the list of student_import_rows with row_status and error_message for each error row
+#### Scenario: Registration during active import
+- GIVEN a CSV import batch is currently being processed
+- WHEN a student submits a registration request
+- THEN the registration is processed normally without being blocked by the import
+
+## Technical Constraints
+
+| Parameter | Value | Reason |
+| --- | --- | --- |
+| Import target | `student_import_rows` staging table | Never insert directly into `students` |
+| Promotion | Atomic database transaction | Ensures all-or-nothing promotion |
+| Student code | UNIQUE constraint on `student_code` | Prevents duplicates in production |
+| Audit | Batch record with status and row-level errors | Admin visibility into import results |
+| Duplicate detection | File checksum comparison | Avoids reprocessing identical files |
+| Crash safety | Transaction rollback on failure | Protects data integrity |
+| Concurrency | Import does not block registration | System remains available during import |

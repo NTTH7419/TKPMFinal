@@ -16,22 +16,22 @@ The system SHALL allow ORGANIZER and ADMIN to create, update (title, speaker, ro
 - **THEN** the workshop transitions to status=CANCELLED and the system emits a WorkshopCancelled domain event
 
 ### Requirement: Public workshop listing
-The system SHALL allow any client (including unauthenticated users) to view the list of all PUBLISHED workshops, including speaker information, room name, and remaining seat count.
+The system SHALL allow any client (including unauthenticated users) to view the list of all OPEN workshops, including speaker information, room name, and remaining seat count.
 
 #### Scenario: Browse workshop list
 - **WHEN** a client calls `GET /workshops`
-- **THEN** the backend returns paginated PUBLISHED workshops with fields: title, speaker_name, room_name, starts_at, ends_at, capacity, confirmed_count, held_count, fee_type, price, summary_status, ai_summary
+- **THEN** the backend returns paginated OPEN workshops with fields: title, speaker_name, room_name, starts_at, ends_at, capacity, confirmed_count, held_count, fee_type, price, summary_status, ai_summary
 
 #### Scenario: View workshop detail with room map
 - **WHEN** a client calls `GET /workshops/:id`
 - **THEN** the backend returns full workshop details including room_map_url and ai_summary (when available)
 
-### Requirement: Eventual-consistent seat count via Supabase Realtime
-The system SHALL update the remaining seat count on the workshop listing with eventual consistency. The Student Web App subscribes to Supabase Realtime on the `workshops` table and receives updates when `confirmed_count` or `held_count` changes.
+### Requirement: Eventual-consistent seat count via SSE + Redis Pub/Sub
+The system SHALL update the remaining seat count on the workshop listing with eventual consistency. The backend exposes an SSE endpoint `GET /workshops/:id/seats`. When seat count changes (registration/hold/expire), the backend publishes to Redis Pub/Sub channel `ws:{workshop_id}:seats` and pushes updates to all connected SSE clients.
 
 #### Scenario: Seat count updates after a registration
 - **WHEN** a registration is CONFIRMED and `confirmed_count` changes in the database
-- **THEN** Supabase Realtime broadcasts the change to all subscribed clients, and the UI updates within a few seconds
+- **THEN** the backend publishes `{ remaining_seats, held_count, confirmed_count }` to the Redis Pub/Sub channel, and all connected SSE clients receive the update within a few seconds
 
 ### Requirement: Statistics dashboard for Organizers
 The system SHALL provide a statistics API for ORGANIZER and ADMIN: registration count, confirmed count, check-in count, and capacity utilization per workshop.

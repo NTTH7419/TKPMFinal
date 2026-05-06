@@ -1,57 +1,118 @@
+# Delta for Auth & RBAC
+
 ## ADDED Requirements
 
-### Requirement: Email and password authentication
-The system SHALL allow users to log in using their email and password. The backend MUST verify the bcrypt hash (cost factor ≥ 12) and check that `users.status = ACTIVE` before issuing tokens.
+### Requirement: JWT-Based Stateless Authentication
+The system MUST use JWT (JSON Web Token) for stateless authentication with short-lived access tokens and rotatable refresh tokens.
 
-#### Scenario: Successful login
-- **WHEN** a user sends `POST /auth/login` with valid email/password and an ACTIVE account
-- **THEN** the backend returns a JWT access token (TTL 15 min) and sets a refresh token (TTL 7 days) in an HTTP-only cookie
+#### Scenario: User logs in with valid credentials
+- GIVEN a user with `status = ACTIVE`
+- WHEN the user submits a valid email and password
+- THEN the backend verifies the password using bcrypt hash
+- AND issues an access token (JWT, TTL 15 minutes) containing `user_id`, `roles[]`, `iat`, `exp`
+- AND issues a refresh token (JWT, TTL 7 days) containing `user_id`, `jti`, `exp`
+- AND the access token is stored in client memory
+- AND the refresh token is stored in an HTTP-only cookie
 
-#### Scenario: Invalid credentials
-- **WHEN** a user sends an incorrect email or password
-- **THEN** the backend returns `401 Unauthorized`
+#### Scenario: User logs in with invalid credentials
+- GIVEN any user
+- WHEN the user submits an incorrect email or password
+- THEN the backend returns `401 Unauthorized`
 
-#### Scenario: Locked account
-- **WHEN** a user attempts to log in with an account where `status = LOCKED`
-- **THEN** the backend returns `403 Forbidden`
+#### Scenario: Locked account login attempt
+- GIVEN a user with `status = LOCKED`
+- WHEN the user submits valid credentials
+- THEN the backend returns `403 Forbidden`
 
-### Requirement: JWT access token and refresh token rotation
-The system SHALL use stateless access tokens (15-min TTL) and rotating refresh tokens (7-day TTL). On every refresh, a new token pair is issued and the old refresh token is revoked via a Redis blocklist keyed by `jti`.
+---
 
-#### Scenario: Successful token refresh
-- **WHEN** a client sends `POST /auth/refresh` with a valid, non-revoked refresh token
-- **THEN** the backend issues a new access token (15 min) and a new refresh token (7 days), and revokes the old refresh token
+### Requirement: Token Refresh and Rotation
+The system MUST support automatic access token refresh using refresh tokens, with mandatory rotation on each use.
 
-#### Scenario: Revoked refresh token reuse
-- **WHEN** a client sends a refresh token whose `jti` is present in the Redis blocklist
-- **THEN** the backend returns `401` and requires the user to log in again
+#### Scenario: Access token expired, valid refresh token
+- GIVEN an authenticated user whose access token has expired
+- WHEN the client sends the refresh token to `POST /auth/refresh`
+- THEN the backend verifies the refresh token is still valid and its `jti` is not in the Redis blocklist
+- AND issues a new access token (15 minutes) and a new refresh token (7 days)
+- AND revokes the old refresh token by storing its `jti` in Redis with TTL = remaining time
 
-#### Scenario: Expired refresh token
-- **WHEN** a client sends a refresh token older than 7 days
-- **THEN** the backend returns `401` and requires the user to log in again
+#### Scenario: Refresh token expired or revoked
+- GIVEN a refresh token that has expired or whose `jti` is in the Redis blocklist
+- WHEN the client sends it to `POST /auth/refresh`
+- THEN the backend returns `401 Unauthorized`
+- AND the client must redirect the user to the login page
 
-### Requirement: RBAC with 4 roles enforced at the backend
-The system SHALL enforce access control at the backend for 4 roles: STUDENT, ORGANIZER, CHECKIN_STAFF, ADMIN. Frontend UI only shows/hides elements — it is not a security boundary.
+#### Scenario: Replay of already-used refresh token
+- GIVEN a refresh token that has already been rotated
+- WHEN the old refresh token is sent to `POST /auth/refresh`
+- THEN the backend rejects it (its `jti` is in the Redis blocklist)
+- AND returns `401 Unauthorized`
 
-#### Scenario: Student accesses admin API
-- **WHEN** a user with role STUDENT calls `POST /admin/workshops`
-- **THEN** the backend returns `403 Forbidden`
+---
 
-#### Scenario: Check-in staff accesses workshop management API
-- **WHEN** a user with role CHECKIN_STAFF calls `PATCH /admin/workshops/:id`
-- **THEN** the backend returns `403 Forbidden`
+### Requirement: Role-Based Access Control (RBAC)
+The system MUST enforce RBAC on the backend using guard middleware. Frontend visibility MUST NOT be relied upon for access control.
 
-#### Scenario: ADMIN has full ORGANIZER access
-- **WHEN** a user with role ADMIN calls any endpoint requiring ORGANIZER
-- **THEN** the backend allows the request
+#### Scenario: Student tries to access workshop admin API
+- GIVEN an authenticated user with role `STUDENT`
+- WHEN the user calls an API endpoint restricted to `ORGANIZER` or `ADMIN`
+- THEN the backend returns `403 Forbidden`
 
-### Requirement: Audit log for critical actions
-The system SHALL record audit log entries for the following actions: login attempts, role assignments, workshop create/update/cancel, and token revocation.
+#### Scenario: Check-in staff tries to access admin workshop API
+- GIVEN an authenticated user with role `CHECKIN_STAFF`
+- WHEN the user calls an API restricted to `ORGANIZER` or `ADMIN`
+- THEN the backend returns `403 Forbidden`
 
-#### Scenario: Login event logged
-- **WHEN** a user successfully or unsuccessfully attempts to log in
-- **THEN** the system writes an audit record containing user_id (if resolvable), IP address, action type, and timestamp
+#### Scenario: Organizer tries to access student private data
+- GIVEN an authenticated user with role `ORGANIZER`
+- WHEN the user attempts to access another student's personal QR endpoint
+- THEN the backend checks ownership (`student_id` or `user_id`) and returns `403 Forbidden`
 
-#### Scenario: Role change logged
-- **WHEN** an ADMIN assigns or removes a role from another user
-- **THEN** the system writes an audit record containing actor_id, target_user_id, role, action, and timestamp
+#### Scenario: Admin assigns role to a user
+- GIVEN an authenticated user with role `ADMIN`
+- WHEN the admin assigns a new role to a target user
+- THEN the role is saved to the database
+- AND an audit log entry is created
+
+---
+
+### Requirement: Password Security
+The system MUST hash passwords using bcrypt with a cost factor ≥ 12. Plaintext, MD5, and SHA-1 MUST NOT be used.
+
+#### Scenario: Password storage on registration
+- GIVEN a new user registering an account
+- WHEN the user submits a password
+- THEN the backend hashes it with bcrypt (cost factor ≥ 12) before storing
+
+---
+
+### Requirement: Webhook Authentication
+The system MUST authenticate payment gateway webhooks using HMAC signature verification, not user role-based auth.
+
+#### Scenario: Payment gateway sends a webhook
+- GIVEN a payment gateway configured with a shared HMAC secret
+- WHEN the gateway sends a signed webhook to the backend
+- THEN the backend verifies the HMAC signature
+- AND processes the webhook only if the signature is valid
+
+---
+
+### Requirement: Audit Logging for Security-Critical Actions
+The system MUST record audit logs for security-critical actions.
+
+#### Scenario: Auditable actions
+- GIVEN any of the following actions occur: login, role change, workshop create/cancel, token revoke
+- THEN an audit log entry is created with the action details, actor, and timestamp
+
+## Technical Constraints
+
+| Parameter | Value | Reason |
+| --- | --- | --- |
+| Access Token TTL | 15 minutes | Short-lived to mitigate inability to revoke JWT early |
+| Refresh Token TTL | 7 days | Balances security and user convenience |
+| Access Token Storage | Client memory | Prevents XSS-based token theft from storage |
+| Refresh Token Storage | HTTP-only cookie | Prevents JavaScript access to refresh token |
+| Password Hashing | bcrypt, cost factor ≥ 12 | Industry-standard, resistant to brute force |
+| Token Rotation | Mandatory on each refresh | Prevents replay attacks with old refresh tokens |
+| Authorization Enforcement | Backend guards only | Frontend visibility is NOT a security boundary |
+| Webhook Auth | HMAC signature | Independent from user role system |

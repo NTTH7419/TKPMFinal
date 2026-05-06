@@ -1,44 +1,114 @@
+# Delta for Realtime Seat Count & Load Protection
+
 ## ADDED Requirements
 
-### Requirement: Token bucket rate limiting per endpoint tier
-The system SHALL implement token bucket rate limiting using Redis. Each request consumes one token; tokens refill at a fixed rate. Requests that exceed the burst capacity MUST receive a `429 Too Many Requests` response with a `Retry-After` header.
+### Requirement: Realtime Seat Count via SSE
+The system MUST push seat availability updates to connected clients in real-time using Server-Sent Events (SSE), with Redis Pub/Sub for cross-instance distribution.
 
-Rate limit tiers:
-- Public listing: key=`ip`, burst=60, refill=10/s
-- Login: key=`ip`, burst=10, refill=1/s
-- Workshop registration: key=`user_id:workshop_id`, burst=5, refill=1/30s
-- Admin operations: key=`user_id`, burst=30, refill=5/s
+#### Scenario: Seat count changes after a registration
+- GIVEN one or more students are connected via SSE to the workshop detail page
+- WHEN a registration, hold, or expiration changes the seat count
+- THEN the backend emits an internal event
+- AND Redis Pub/Sub distributes the event to all API instances
+- AND each instance pushes the updated `remaining_seats` to connected clients
+- AND clients update the UI in real-time
 
-#### Scenario: Request exceeds rate limit
-- **WHEN** a client sends requests that exhaust the burst capacity for an endpoint tier
-- **THEN** the backend returns `429 Too Many Requests` with a `Retry-After: <seconds>` header
+#### Scenario: SSE connection lost
+- GIVEN a client's SSE connection drops
+- WHEN the client reconnects
+- THEN the client fetches the latest seat count snapshot
+- AND resumes listening for live updates
 
-#### Scenario: Request within allowed limits
-- **WHEN** a client sends a request within the burst capacity
-- **THEN** the request is processed normally and one token is consumed
+#### Scenario: Redis Pub/Sub fails
+- GIVEN Redis Pub/Sub is temporarily unavailable
+- WHEN a registration changes the seat count
+- THEN the registration is still processed correctly via the database
+- AND realtime updates are degraded (clients won't receive live pushes)
+- AND the system recovers automatically when Redis is restored
 
-### Requirement: Virtual queue token for workshop registration
-The system SHALL issue single-use virtual queue tokens (bound to user_id + workshop_id, TTL 120 s) stored in Redis before a student can submit a registration request. A token that is expired or has already been used MUST be rejected.
+---
 
-#### Scenario: Successfully obtain a queue token
-- **WHEN** a student calls `POST /workshops/:id/queue-token`
-- **THEN** the system issues a token with a 120-second TTL stored in Redis
+### Requirement: Virtual Queue for Peak Traffic
+The system MUST implement a virtual queue to prevent all 12,000 students from hitting the registration API simultaneously during peak registration windows.
 
-#### Scenario: Registration submitted without a queue token
-- **WHEN** a student sends `POST /registrations` without a queue token
-- **THEN** the backend returns QUEUE_TOKEN_REQUIRED
+#### Scenario: Student enters registration during peak time
+- GIVEN a student navigates to the registration screen during a high-traffic period
+- WHEN the frontend requests a queue token from the backend
+- THEN Redis stores a token with `{user_id, workshop_id, issued_at, expires_at}` (TTL = 120 seconds)
+- AND the backend only accepts registration requests with a valid queue token
 
-#### Scenario: Queue token has expired
-- **WHEN** a student sends a registration request with a queue token that has exceeded its 120-second TTL
-- **THEN** the backend returns QUEUE_TOKEN_EXPIRED and the token is deleted from Redis
+#### Scenario: Queue token used successfully
+- GIVEN a student has a valid queue token
+- WHEN the student submits a registration request with the token
+- THEN the backend validates the token (correct user, correct workshop, not expired)
+- AND processes the registration
+- AND deletes the token from Redis immediately after use
 
-#### Scenario: Queue token already used (one-time-use)
-- **WHEN** a student sends a second registration request reusing an already-consumed token
-- **THEN** the backend returns QUEUE_TOKEN_EXPIRED because the token was deleted from Redis on first use
+#### Scenario: Queue token expired
+- GIVEN a student's queue token has passed its 120-second TTL
+- WHEN the student attempts to register with the expired token
+- THEN the backend rejects the request
+- AND the student must request a new token (re-entering the queue)
 
-### Requirement: Fair token issuance under peak load
-The system SHALL throttle queue token issuance to a controlled rate per workshop so that only a bounded number of registration requests reach the API per second, ensuring fairness among competing students.
+#### Scenario: Queue token misused
+- GIVEN a queue token bound to `user_id=A` and `workshop_id=X`
+- WHEN a different user or different workshop ID is submitted with that token
+- THEN the backend rejects the request
 
-#### Scenario: 12,000 students arrive in the first 10 minutes
-- **WHEN** 12,000 students simultaneously request a queue token for the same workshop
-- **THEN** the system issues tokens at a controlled rate; students receive tokens in order without any individual being unfairly prioritized
+---
+
+### Requirement: Token Bucket Rate Limiting
+The system MUST enforce rate limits using a Token Bucket algorithm backed by Redis, with tier-specific configurations per endpoint type.
+
+#### Scenario: Public endpoint rate limit (view schedule)
+- GIVEN a client browsing workshop listings
+- WHEN the client exceeds 60 requests burst at 10/s refill rate
+- THEN the backend returns `429 Too Many Requests` with `Retry-After: 5s`
+
+#### Scenario: Login endpoint rate limit
+- GIVEN a client attempting to log in
+- WHEN the client exceeds 10 requests burst at 1/s refill rate
+- THEN the backend returns `429 Too Many Requests` with `Retry-After: 10s`
+
+#### Scenario: Registration endpoint rate limit
+- GIVEN a student attempting to register for a workshop
+- WHEN the student exceeds 5 requests burst at 1/30s refill rate (keyed by `user_id+workshop_id`)
+- THEN the backend returns `429 Too Many Requests` with `Retry-After: 30s`
+
+#### Scenario: Admin endpoint rate limit
+- GIVEN an admin performing operations
+- WHEN the admin exceeds 30 requests burst at 5/s refill rate (keyed by `user_id`)
+- THEN the backend returns `429 Too Many Requests` with `Retry-After: 5s`
+
+---
+
+### Requirement: Idempotent Registration Retry
+The system MUST handle client retries due to timeouts without creating duplicate registrations.
+
+#### Scenario: Client retries after timeout
+- GIVEN a client submitted a registration request that timed out
+- WHEN the client retries with the same `Idempotency-Key`
+- THEN the backend returns the previously created registration result
+- AND does NOT create a new registration
+
+## Technical Constraints
+
+| Parameter | Value | Reason |
+| --- | --- | --- |
+| Realtime transport | SSE (Server-Sent Events) | One-directional push; simpler than WebSocket for seat updates |
+| Realtime source of truth | Database (NOT SSE) | Registration API always checks DB in a transaction |
+| Cross-instance distribution | Redis Pub/Sub | Ensures all API instances broadcast updates |
+| Queue token TTL | 120 seconds | Time window for student to complete registration |
+| Queue token binding | `user_id + workshop_id` | Prevents token sharing or misuse |
+| Rate limit algorithm | Token Bucket (Redis) | Allows burst with sustained rate control |
+| Rate limit enforcement | Backend middleware only | Frontend cannot be trusted |
+| Seat update semantics | Idempotent, snapshot-based | Handles out-of-order delivery by using latest snapshot |
+
+### Rate Limit Tiers
+
+| Endpoint Tier | Key | Burst (Capacity) | Refill Rate | Retry-After |
+| --- | --- | --- | --- | --- |
+| Public (view schedule) | `ip` | 60 | 10/s | 5s |
+| Login | `ip` | 10 | 1/s | 10s |
+| Registration | `user_id+workshop_id` | 5 | 1/30s | 30s |
+| Admin operations | `user_id` | 30 | 5/s | 5s |

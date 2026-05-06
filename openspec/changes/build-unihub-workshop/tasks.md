@@ -6,10 +6,11 @@
 - [ ] 1.4 Create `apps/admin-web` with Vite React: `npm create vite@latest admin-web -- --template react-ts`
 - [ ] 1.5 Create `apps/checkin-pwa` with Vite React and configure `vite-plugin-pwa`
 - [ ] 1.6 Create `packages/shared` with TypeScript: DTOs, enums (Role, WorkshopStatus, RegistrationStatus, PaymentStatus, NotificationChannel), shared constants
-- [ ] 1.7 Provision Supabase project: create all tables per the ERD schema (users, roles, user_roles, students, workshops, registrations, payments, checkin_events, workshop_documents, student_import_batches, student_import_rows, notification_events, notification_deliveries)
-- [ ] 1.8 Provision Upstash Redis instance and obtain the connection URL
-- [ ] 1.9 Configure `.env` for the API: DATABASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, REDIS_URL, JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, HMAC_QR_SECRET, HMAC_WEBHOOK_SECRET
-- [ ] 1.10 Configure ESLint + Prettier across the entire workspace
+- [ ] 1.7 Provision Supabase project: obtain `DATABASE_URL` (connection pooling URL), `SUPABASE_URL`, `SUPABASE_ANON_KEY`; create Storage buckets: `workshop-docs`, `student-imports`, `qr-codes`
+- [ ] 1.8 Run Prisma migration against Supabase PostgreSQL: `npx prisma migrate dev` to create all tables per the ERD schema (users, roles, user_roles, students, workshops, registrations, payments, checkin_events, workshop_documents, student_import_batches, student_import_rows, notification_events, notification_deliveries)
+- [ ] 1.9 Setup Redis via Docker Compose: create `docker-compose.yml` with `redis:7-alpine`, port 6379, AOF persistence enabled
+- [ ] 1.10 Configure `.env` for the API: DATABASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY, REDIS_URL (redis://localhost:6379), JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, HMAC_QR_SECRET, HMAC_WEBHOOK_SECRET, RESEND_API_KEY
+- [ ] 1.11 Configure ESLint + Prettier across the entire workspace
 
 ## 2. Auth/RBAC Module [Person A — Week 1–2]
 
@@ -29,14 +30,15 @@
 - [ ] 3.1 Create `WorkshopModule` in NestJS with the Workshop entity
 - [ ] 3.2 Implement `POST /admin/workshops` (ORGANIZER/ADMIN): create workshop, validate required fields, set status=DRAFT
 - [ ] 3.3 Implement `PATCH /admin/workshops/:id` (ORGANIZER/ADMIN): update fields, emit WorkshopUpdated event when room or time changes
-- [ ] 3.4 Implement `POST /admin/workshops/:id/publish` (ORGANIZER/ADMIN): transition DRAFT → PUBLISHED
+- [ ] 3.4 Implement `POST /admin/workshops/:id/open` (ORGANIZER/ADMIN): transition DRAFT → OPEN
 - [ ] 3.5 Implement `POST /admin/workshops/:id/cancel` (ORGANIZER/ADMIN): transition → CANCELLED, emit WorkshopCancelled event
-- [ ] 3.6 Implement `GET /workshops` (public): paginated list of PUBLISHED workshops
+- [ ] 3.6 Implement `GET /workshops` (public): paginated list of OPEN workshops
 - [ ] 3.7 Implement `GET /workshops/:id` (public): full workshop detail including room_map_url and ai_summary
 - [ ] 3.8 Implement `GET /admin/workshops/:id/stats` (ORGANIZER/ADMIN): return total_registrations, confirmed_count, pending_payment_count, checkin_count, utilization_pct
-- [ ] 3.9 Enable Supabase Realtime on the `workshops` table; configure Student Web to subscribe to changes for seat count updates
-- [ ] 3.10 Build Admin Web UI: workshop list, create/edit form, publish/cancel actions, statistics page
-- [ ] 3.11 Build Student Web UI: workshop list with realtime seat count, workshop detail page
+- [ ] 3.9 Implement SSE endpoint `GET /workshops/:id/seats` (backend): subscribe to Redis Pub/Sub channel `ws:{workshop_id}:seats`, push `{ remaining_seats, held_count, confirmed_count }` to connected clients; on client disconnect, unsubscribe from Redis channel
+- [ ] 3.10 Configure Student Web to consume the SSE endpoint: use the `EventSource` API to connect to `GET /workshops/:id/seats`, update seat count UI on each message, auto-reconnect on disconnect
+- [ ] 3.11 Build Admin Web UI: workshop list, create/edit form, open/cancel actions, statistics page
+- [ ] 3.12 Build Student Web UI: workshop list with realtime seat count badge, workshop detail page
 
 ## 4. Registration Module [Person C — Week 2–3]
 
@@ -44,17 +46,17 @@
 - [ ] 4.2 Implement student validation: check `students.user_id = current_user.id` and `status = ACTIVE` before creating a registration
 - [ ] 4.3 Implement `POST /registrations` with PostgreSQL row lock (`SELECT ... FOR UPDATE` on the workshop row) inside a transaction
 - [ ] 4.4 Implement free workshop logic: create registration CONFIRMED immediately, increment confirmed_count, generate QR
-- [ ] 4.5 Implement paid workshop logic: create registration PENDING_PAYMENT, set hold_expires_at (+15 min), increment held_count
+- [ ] 4.5 Implement paid workshop logic: create registration PENDING_PAYMENT, set hold_expires_at (+10 min), increment held_count
 - [ ] 4.6 Implement idempotency key: check `registrations.idempotency_key` before creating, return existing result if key matches
 - [ ] 4.7 Implement QR generation: HMAC-SHA256 sign with payload (registrationId, workshopId, studentId, expiresAt = end_time + 30 min), store the hash
 - [ ] 4.8 Implement `GET /me/registrations` (STUDENT): list the student's own registrations
 - [ ] 4.9 Implement `GET /me/registrations/:id/qr` (STUDENT): return QR image (base64 PNG) if status=CONFIRMED
-- [ ] 4.10 Implement BullMQ job `expire-hold`: runs every minute, finds PENDING_PAYMENT registrations past hold_expires_at, transitions them to EXPIRED and decrements held_count
+- [ ] 4.10 Implement BullMQ job `expire-hold`: enqueue as a **delayed job** targeting a specific `registrationId` (delay = 10 minutes from creation); on execution, check if the registration is still PENDING_PAYMENT — if yes, transition it to EXPIRED, decrement `workshops.held_count`, and emit `RegistrationExpired` event; if already CONFIRMED or CANCELLED, skip (idempotent)
 - [ ] 4.11 Write tests: 100 concurrent requests for the last seat, idempotency retry, hold expiration
 
 ## 5. Load Protection Module [Person A — Week 2–3]
 
-- [ ] 5.1 Implement `TokenBucketRateLimiter` service using Upstash Redis: atomic Lua script for check-and-consume
+- [ ] 5.1 Implement `TokenBucketRateLimiter` service using Redis (ioredis): atomic Lua script for check-and-consume
 - [ ] 5.2 Create `RateLimitGuard` in NestJS: apply token bucket check per endpoint tier (ip, user_id, user_id+workshop_id)
 - [ ] 5.3 Configure rate limits for all 4 tiers: public listing (60 burst / 10 refill/s), login (10/1s), registration (5 burst / 1 per 30s per user+workshop), admin (30/5s)
 - [ ] 5.4 Implement 429 response with `Retry-After` header when limits are exceeded
@@ -71,10 +73,10 @@
 - [ ] 6.4 Implement mock webhook trigger: after user confirms on the checkout page, the mock sends a signed HMAC-SHA256 webhook to `POST /payments/webhook`
 - [ ] 6.5 Implement `POST /payments/webhook`: verify HMAC signature, process idempotently by payment_intent_id, update payment SUCCEEDED + registration CONFIRMED + generate QR
 - [ ] 6.6 Implement auto-refund: when a SUCCEEDED webhook arrives but registration is EXPIRED → call `PaymentAdapter.refund()` with an idempotency key
-- [ ] 6.7 Implement CircuitBreaker service using Redis: state key `circuit_breaker:payment`, three states (Closed/Open/Half-Open), threshold 5 failures/30s, open duration 30s, 3 Half-Open probes
+- [ ] 6.7 Implement CircuitBreaker service using Redis: state key `cb:payment_gateway`, three states (Closed/Open/Half-Open), threshold: 5 consecutive failures OR >50% failure rate in 30s window (minimum 10 requests), gateway call timeout 5s, open duration 30s, 3 Half-Open probes
 - [ ] 6.8 Wrap all PaymentAdapter calls in the circuit breaker; when Open → return 503 with user-facing message
 - [ ] 6.9 Enforce `payments.idempotency_key` uniqueness: retry with the same key returns the existing intent
-- [ ] 6.10 Implement BullMQ job `payment-reconcile`: runs every 5 minutes, identifies stale PENDING_PAYMENT records without a webhook
+- [ ] 6.10 Implement BullMQ job `payment-reconcile`: runs every 15 minutes (cron); queries all PENDING_PAYMENT registrations where `hold_expires_at` is older than 30 minutes AND no corresponding payment with status SUCCEEDED exists; for each stale record → transition registration to NEEDS_REVIEW, log to audit, notify admin via in-app notification
 - [ ] 6.11 Write tests: circuit breaker state transitions, duplicate webhook handling, auto-refund, idempotency
 
 ## 7. Notification Module [Person C — Week 3–4]
@@ -95,7 +97,7 @@
 - [ ] 8.1 Configure PWA manifest and service worker in `apps/checkin-pwa` using vite-plugin-pwa
 - [ ] 8.2 Build the CHECKIN_STAFF login screen (reuse auth flow from shared package)
 - [ ] 8.3 Build the workshop selection screen (lists workshops currently in progress or starting soon)
-- [ ] 8.4 Implement `POST /checkin/preload` (CHECKIN_STAFF): return the roster (registrationId, studentId, qr_token_hash) and HMAC secret for the selected workshop
+- [ ] 8.4 Implement `GET /checkin/preload/:workshopId` (CHECKIN_STAFF/ADMIN): return the roster (registrationId, studentId, qr_token_hash) and HMAC secret for the selected workshop
 - [ ] 8.5 Implement saving the roster and HMAC secret to IndexedDB using the `idb` library
 - [ ] 8.6 Build the QR scanner screen using the `html5-qrcode` library with camera access
 - [ ] 8.7 Implement offline QR verification: decode QR payload, verify HMAC-SHA256 using the secret from IndexedDB, check expiresAt, look up registrationId in roster
@@ -108,7 +110,7 @@
 ## 9. Student Import Module [Person A — Week 4–5]
 
 - [ ] 9.1 Create `StudentImportModule` in NestJS with a BullMQ queue named `student-import`
-- [ ] 9.2 Implement the cron scheduler (`@Cron`, 2:00 AM nightly): list files in the Supabase Storage `student-csv` bucket, compute SHA-256 checksum, skip files already in `student_import_batches`
+- [ ] 9.2 Implement the cron scheduler (`@Cron`, 2:00 AM nightly): list files in the Supabase Storage `student-imports` bucket, compute SHA-256 checksum, skip files already in `student_import_batches`
 - [ ] 9.3 Implement the parse stage: read CSV from Storage, validate headers (required: student_code, email, full_name, faculty), parse each row into `student_import_rows`
 - [ ] 9.4 Implement the validate stage: check required fields, detect duplicate student_codes within the batch, assign row_status = VALID / ERROR / DUPLICATE
 - [ ] 9.5 Implement the threshold check: if error_rows / total_rows > error_threshold_pct (20%) → batch transitions to REJECTED, processing stops

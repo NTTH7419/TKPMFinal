@@ -53,18 +53,18 @@ flowchart LR
 ```mermaid
 flowchart TB
     subgraph Clients["Client Containers"]
-        StudentWeb["Student Web App\nReact/Next.js"]
-        AdminWeb["Admin Web App\nReact/Next.js"]
+        StudentWeb["Student Web App\nReact + Vite"]
+        AdminWeb["Admin Web App\nReact + Vite"]
         CheckinPWA["Check-in PWA\nService Worker + IndexedDB + QR Scanner"]
     end
 
     subgraph UniHub["UniHub Workshop"]
-        API["Backend API\nNestJS hoặc Spring Boot\nModular Monolith"]
+        API["Backend API\nNestJS\nModular Monolith"]
         Worker["Background Workers\nQueue Consumers"]
         DB[("PostgreSQL\nTransactional Data")]
         Redis[("Redis\nVirtual Queue, Rate Limit, Pub/Sub")]
-        Broker["Message Broker\nBullMQ/RabbitMQ"]
-        Storage[("Object Storage\nPDF, CSV")]
+        Broker["Message Broker\nBullMQ"]
+        Storage[("Supabase Storage\nPDF, CSV")]
     end
 
     subgraph External["External Systems"]
@@ -103,7 +103,7 @@ flowchart LR
     Organizer["Ban tổ chức"] --> AdminWeb["Admin Web"]
     Staff["Check-in Staff"] --> PWA["Check-in PWA"]
 
-    StudentWeb -->|"Browse/register\nSSE/WS seat updates"| API["Backend API"]
+    StudentWeb -->|"Browse/register\nSSE seat updates"| API["Backend API"]
     AdminWeb -->|"Workshop/admin operations"| API
     PWA -->|"Online preload/sync"| API
     PWA -.->|"Offline scan"| IndexedDB[("IndexedDB\nRoster + Event Log")]

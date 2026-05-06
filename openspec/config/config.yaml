@@ -1,0 +1,69 @@
+schema: spec-driven
+
+context: |
+  ## Project
+  UniHub Workshop - hệ thống quản lý đăng ký và tổ chức workshop cho sinh viên đại học.
+  Scale mục tiêu: ~12.000 user/sự kiện.
+
+  ## Architecture
+  Modular Monolith - NestJS duy nhất, tổ chức theo domain module với boundary rõ ràng.
+  Background jobs chạy qua BullMQ trong cùng process.
+
+  ## Tech Stack
+  - Runtime: Node.js 20 LTS
+  - Framework: NestJS (Guard, Interceptor, Module system)
+  - ORM: Prisma (schema-first, type-safe)
+  - Database: PostgreSQL 16 (transaction ACID, SELECT FOR UPDATE, unique constraint)
+  - Cache / Queue store: Redis 7 (rate limit, virtual queue, pub/sub)
+  - Job queue: BullMQ (chạy trên Redis, không cần broker riêng)
+  - Object storage: MinIO (local) / S3 (prod) - lưu PDF, CSV, QR image
+  - Auth: JWT access token (15m) + refresh token (7d), stateless
+  - Realtime: SSE - Server-Sent Events (push một chiều, dùng cho seat count)
+
+  ## Domain Modules (src/)
+  - auth - JWT, RBAC guard, session, refresh token
+  - workshop - CRUD workshop, SSE seat count
+  - registration - hold slot, QR generation
+  - payment - circuit breaker, idempotency, webhook
+  - checkin - preload roster, offline sync (PWA)
+  - notification - channel adapter (email, in-app, Telegram stub)
+  - student-import - CSV staging, validation, promotion
+  - ai-summary - PDF parse, LLM call, chunking
+  - queue - BullMQ setup, worker definitions
+  - common - rate limiter, virtual queue, response utils
+
+  ## Background Workers (BullMQ)
+  - notification-worker - gửi email, in-app
+  - ai-worker - xử lý PDF và gọi LLM
+  - csv-worker - validate và promote CSV import
+  - payment-reconcile-worker - đối soát thanh toán
+  - hold-expire-worker - huỷ slot giữ chỗ sau 10 phút chưa thanh toán
+
+  ## Roles (RBAC)
+  - STUDENT - đăng ký workshop, check-in
+  - ORGANIZER - tạo và quản lý workshop, upload PDF
+  - CHECKIN_STAFF - thực hiện check-in tại sự kiện
+  - ADMIN - quản trị toàn hệ thống, import sinh viên
+
+  ## Key Constraints
+  - Chống oversell: SELECT FOR UPDATE + held_count + confirmed_count < capacity
+  - Idempotency: mọi request mutation đều hỗ trợ Idempotency-Key header
+  - Hold slot: 10 phút, sau đó hold-expire-worker tự huỷ nếu chưa thanh toán
+  - Rate limit: Token Bucket Redis, key theo user_id + action
+  - Payment: async (tạo intent → redirect → webhook), circuit breaker khi gateway lỗi
+  - PDF upload: tối đa 20MB, mime_type phải là application/pdf
+  - AI chunking: ≤ 3.000 token/chunk, timeout 30s/call, max retry 3 lần
+  - JWT access token không revoke được trước hạn - mitigated bằng TTL ngắn (15m)
+
+  ## Clients
+  - Student Web: React / Next.js
+  - Admin Web: Next.js SSR
+  - Check-in PWA: offline-first, IndexedDB event log
+
+  ## Coding Conventions
+  - camelCase cho TypeScript/JavaScript
+  - snake_case cho tên cột PostgreSQL
+  - Conventional commits: type(scope): subject
+  - API prefix: /api/v1
+  - Response wrapper chuẩn qua common/response utils
+  - Mỗi module tự quản lý repository của mình, không gọi chéo repository
