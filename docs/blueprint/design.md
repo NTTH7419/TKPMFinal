@@ -340,14 +340,15 @@ erDiagram
 ### Ràng buộc schema quan trọng
 
 - `workshops.confirmed_count + workshops.held_count <= workshops.capacity`.
-- Unique partial index để một sinh viên chỉ có một registration active cho một workshop.
+- Unique partial index để một sinh viên chỉ có một registration active cho một workshop (exclude `CANCELLED`, `EXPIRED`).
 - `payments.payment_intent_id` và `payments.idempotency_key` là unique.
 - `checkin_events.event_id` là unique để sync idempotent.
 - Unique constraint logic theo `registration_id + workshop_id` cho check-in accepted để chống check-in nhiều lần.
 - `student_import_batches.checksum` là unique, giúp phát hiện import trùng file.
 - `student_import_rows.row_status` phân biệt: `VALID`, `ERROR`, `DUPLICATE`.
 - `notification_deliveries` unique theo `(event_id, channel)` để tránh gửi trùng kênh.
-- `workshop_documents.upload_status` theo dõi tiến trình xử lý PDF: `UPLOADED`, `PROCESSING`, `FAILED`.
+- `workshop_documents.upload_status` theo dõi tiến trình xử lý PDF: `UPLOADED`, `PROCESSING`, `DONE`, `FAILED`.
+- `workshops.summary_status` theo dõi AI: `PENDING`, `PROCESSING`, `AI_GENERATED`, `ADMIN_EDITED`, `SUMMARY_FAILED`.
 
 ## Thiết kế kiểm soát truy cập
 
