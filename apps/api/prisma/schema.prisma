@@ -1,0 +1,250 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // directUrl = env("DIRECT_URL")
+}
+
+// ─── Users & Roles ────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  status       String   @default("ACTIVE") // ACTIVE | LOCKED
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  userRoles              UserRole[]
+  student                Student?
+  notificationEvents     NotificationEvent[]
+  workshopDocumentsUploaded WorkshopDocument[] @relation("uploader")
+  checkinEventsAsStaff   CheckinEvent[]      @relation("staff")
+
+  @@map("users")
+}
+
+model Role {
+  id        String     @id @default(uuid())
+  code      String     @unique // STUDENT | ORGANIZER | CHECKIN_STAFF | ADMIN
+  name      String
+  userRoles UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  userId String @map("user_id")
+  roleId String @map("role_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+// ─── Students ─────────────────────────────────────────────────────────────────
+
+model Student {
+  id                  String   @id @default(uuid())
+  userId              String?  @unique @map("user_id")
+  studentCode         String   @unique @map("student_code")
+  email               String
+  fullName            String   @map("full_name")
+  faculty             String
+  status              String   @default("ACTIVE") // ACTIVE | INACTIVE
+  sourceBatchId       String?  @map("source_batch_id")
+  lastSeenInImportAt  DateTime? @map("last_seen_in_import_at")
+
+  user              User?               @relation(fields: [userId], references: [id])
+  sourceBatch       StudentImportBatch? @relation(fields: [sourceBatchId], references: [id])
+  registrations     Registration[]
+  studentImportRows StudentImportRow[]
+
+  @@map("students")
+}
+
+// ─── Workshops ────────────────────────────────────────────────────────────────
+
+model Workshop {
+  id             String   @id @default(uuid())
+  title          String
+  speakerName    String   @map("speaker_name")
+  roomName       String   @map("room_name")
+  roomMapUrl     String?  @map("room_map_url")
+  capacity       Int
+  confirmedCount Int      @default(0) @map("confirmed_count")
+  heldCount      Int      @default(0) @map("held_count")
+  feeType        String   @map("fee_type") // FREE | PAID
+  price          Decimal? @db.Decimal(10, 2)
+  startsAt       DateTime @map("starts_at")
+  endsAt         DateTime @map("ends_at")
+  status         String   @default("DRAFT") // DRAFT | OPEN | CLOSED | CANCELLED
+  summaryStatus  String   @default("PENDING") @map("summary_status")
+  aiSummary      String?  @map("ai_summary") @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  registrations Registration[]
+  documents     WorkshopDocument[]
+  checkinEvents CheckinEvent[]
+
+  @@map("workshops")
+}
+
+// ─── Registrations ────────────────────────────────────────────────────────────
+
+model Registration {
+  id             String    @id @default(uuid())
+  workshopId     String    @map("workshop_id")
+  studentId      String    @map("student_id")
+  status         String    @default("PENDING_PAYMENT") // PENDING_PAYMENT | CONFIRMED | EXPIRED | CANCELLED | NEEDS_REVIEW
+  holdExpiresAt  DateTime? @map("hold_expires_at")
+  qrTokenHash    String?   @map("qr_token_hash")
+  idempotencyKey String    @unique @map("idempotency_key")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  workshop      Workshop       @relation(fields: [workshopId], references: [id])
+  student       Student        @relation(fields: [studentId], references: [id])
+  payments      Payment[]
+  checkinEvents CheckinEvent[]
+
+  // Unique partial index: one active registration per student per workshop
+  // (enforced in migration via raw SQL)
+  @@map("registrations")
+}
+
+// ─── Payments ─────────────────────────────────────────────────────────────────
+
+model Payment {
+  id               String   @id @default(uuid())
+  registrationId   String   @map("registration_id")
+  gateway          String   @default("MOCK")
+  paymentIntentId  String   @unique @map("payment_intent_id")
+  idempotencyKey   String   @unique @map("idempotency_key")
+  amount           Decimal  @db.Decimal(10, 2)
+  status           String   @default("PENDING") // PENDING | SUCCEEDED | FAILED | REFUNDED
+  gatewayPayload   Json?    @map("gateway_payload")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  registration Registration @relation(fields: [registrationId], references: [id])
+
+  @@map("payments")
+}
+
+// ─── Check-in Events ──────────────────────────────────────────────────────────
+
+model CheckinEvent {
+  id             String    @id @default(uuid())
+  eventId        String    @unique @map("event_id") // UUID from PWA — idempotent sync
+  registrationId String    @map("registration_id")
+  workshopId     String    @map("workshop_id")
+  staffUserId    String    @map("staff_user_id")
+  deviceId       String    @map("device_id")
+  scannedAt      DateTime  @map("scanned_at")
+  syncedAt       DateTime? @map("synced_at")
+  status         String    @default("ACCEPTED") // ACCEPTED | DUPLICATE | INVALID | NEEDS_REVIEW
+
+  registration Registration @relation(fields: [registrationId], references: [id])
+  workshop     Workshop      @relation(fields: [workshopId], references: [id])
+  staffUser    User          @relation("staff", fields: [staffUserId], references: [id])
+
+  @@map("checkin_events")
+}
+
+// ─── Workshop Documents (for AI Summary) ─────────────────────────────────────
+
+model WorkshopDocument {
+  id               String   @id @default(uuid())
+  workshopId       String   @map("workshop_id")
+  uploadedById     String   @map("uploaded_by")
+  originalFilename String   @map("original_filename")
+  filePath         String   @map("file_path") // Supabase Storage path
+  fileSizeBytes    Int      @map("file_size_bytes")
+  mimeType         String   @default("application/pdf") @map("mime_type")
+  uploadStatus     String   @default("UPLOADED") @map("upload_status") // UPLOADED | PROCESSING | DONE | FAILED
+  errorReason      String?  @map("error_reason")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  workshop   Workshop @relation(fields: [workshopId], references: [id])
+  uploadedBy User     @relation("uploader", fields: [uploadedById], references: [id])
+
+  @@map("workshop_documents")
+}
+
+// ─── Student Import ───────────────────────────────────────────────────────────
+
+model StudentImportBatch {
+  id                 String    @id @default(uuid())
+  filePath           String    @map("file_path")
+  checksum           String    @unique // SHA-256 to prevent duplicate imports
+  status             String    @default("PENDING") // PENDING | PROCESSING | PROMOTED | REJECTED | FAILED
+  totalRows          Int       @default(0) @map("total_rows")
+  validRows          Int       @default(0) @map("valid_rows")
+  errorRows          Int       @default(0) @map("error_rows")
+  errorThresholdPct  Int       @default(20) @map("error_threshold_pct")
+  startedAt          DateTime? @map("started_at")
+  completedAt        DateTime? @map("completed_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  rows     StudentImportRow[]
+  students Student[]
+
+  @@map("student_import_batches")
+}
+
+model StudentImportRow {
+  id          String  @id @default(uuid())
+  batchId     String  @map("batch_id")
+  studentId   String? @map("student_id") // null if row had errors
+  rowNumber   Int     @map("row_number")
+  studentCode String  @map("student_code")
+  email       String
+  fullName    String  @map("full_name")
+  faculty     String
+  rowStatus   String  @map("row_status") // VALID | ERROR | DUPLICATE
+  errorMessage String? @map("error_message")
+
+  batch   StudentImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  student Student?           @relation(fields: [studentId], references: [id])
+
+  @@map("student_import_rows")
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+model NotificationEvent {
+  id              String   @id @default(uuid())
+  eventType       String   @map("event_type") // RegistrationConfirmed | PaymentSucceeded | etc.
+  recipientUserId String   @map("recipient_user_id")
+  payload         Json
+  status          String   @default("PENDING") // PENDING | PROCESSED
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  recipient     User                    @relation(fields: [recipientUserId], references: [id])
+  deliveries    NotificationDelivery[]
+
+  @@map("notification_events")
+}
+
+model NotificationDelivery {
+  id           String    @id @default(uuid())
+  eventId      String    @map("event_id")
+  channel      String    // EMAIL | IN_APP | TELEGRAM
+  status       String    @default("PENDING") // PENDING | SENT | FAILED | FAILED_PERMANENT
+  errorReason  String?   @map("error_reason")
+  attemptCount Int       @default(0) @map("attempt_count")
+  sentAt       DateTime? @map("sent_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  event NotificationEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Prevent sending duplicate notification on same channel
+  @@unique([eventId, channel])
+  @@map("notification_deliveries")
+}

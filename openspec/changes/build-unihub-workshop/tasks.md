@@ -1,16 +1,16 @@
 ## 1. Monorepo & Project Setup [All — Week 1]
 
-- [ ] 1.1 Initialize pnpm monorepo: create `pnpm-workspace.yaml` and root `package.json` with workspace scripts
-- [ ] 1.2 Create `apps/api` with NestJS CLI: `nest new api --skip-git`
-- [ ] 1.3 Create `apps/student-web` with Vite React: `npm create vite@latest student-web -- --template react-ts`
-- [ ] 1.4 Create `apps/admin-web` with Vite React: `npm create vite@latest admin-web -- --template react-ts`
-- [ ] 1.5 Create `apps/checkin-pwa` with Vite React and configure `vite-plugin-pwa`
-- [ ] 1.6 Create `packages/shared` with TypeScript: DTOs, enums (Role, WorkshopStatus, RegistrationStatus, PaymentStatus, NotificationChannel), shared constants
-- [ ] 1.7 Provision Supabase project: obtain `DATABASE_URL` (connection pooling URL), `SUPABASE_URL`, `SUPABASE_ANON_KEY`; create Storage buckets: `workshop-docs`, `student-imports`, `qr-codes`
-- [ ] 1.8 Run Prisma migration against Supabase PostgreSQL: `npx prisma migrate dev` to create all tables per the ERD schema (users, roles, user_roles, students, workshops, registrations, payments, checkin_events, workshop_documents, student_import_batches, student_import_rows, notification_events, notification_deliveries)
-- [ ] 1.9 Setup Redis via Docker Compose: create `docker-compose.yml` with `redis:7-alpine`, port 6379, AOF persistence enabled
-- [ ] 1.10 Configure `.env` for the API: DATABASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY, REDIS_URL (redis://localhost:6379), JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, HMAC_QR_SECRET, HMAC_WEBHOOK_SECRET, RESEND_API_KEY
-- [ ] 1.11 Configure ESLint + Prettier across the entire workspace
+- [x] 1.1 Initialize pnpm monorepo: create `pnpm-workspace.yaml` and root `package.json` with workspace scripts
+- [x] 1.2 Create `apps/api` with NestJS CLI: `nest new api --skip-git`
+- [x] 1.3 Create `apps/student-web` with Vite React: `npm create vite@latest student-web -- --template react-ts`
+- [x] 1.4 Create `apps/admin-web` with Vite React: `npm create vite@latest admin-web -- --template react-ts`
+- [x] 1.5 Create `apps/checkin-pwa` with Vite React and configure `vite-plugin-pwa`
+- [x] 1.6 Create `packages/shared` with TypeScript: DTOs, enums (Role, WorkshopStatus, RegistrationStatus, PaymentStatus, NotificationChannel), shared constants
+- [x] 1.7 Provision Supabase project: obtain `DATABASE_URL` (connection pooling URL), `SUPABASE_URL`, `SUPABASE_ANON_KEY`; create Storage buckets: `workshop-docs`, `student-imports`, `qr-codes`
+- [x] 1.8 Run Prisma migration against Supabase PostgreSQL: `npx prisma migrate dev` to create all tables per the ERD schema (users, roles, user_roles, students, workshops, registrations, payments, checkin_events, workshop_documents, student_import_batches, student_import_rows, notification_events, notification_deliveries)
+- [x] 1.9 Setup Redis via Docker Compose: create `docker-compose.yml` with `redis:7-alpine`, port 6379, AOF persistence enabled
+- [x] 1.10 Configure `.env` for the API: DATABASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY, REDIS_URL (redis://localhost:6379), JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, HMAC_QR_SECRET, HMAC_WEBHOOK_SECRET, RESEND_API_KEY
+- [x] 1.11 Configure ESLint + Prettier across the entire workspace
 
 ## 2. Auth/RBAC Module [Person A — Week 1–2]
 
