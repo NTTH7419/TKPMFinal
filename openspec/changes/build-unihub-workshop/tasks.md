@@ -14,16 +14,16 @@
 
 ## 2. Auth/RBAC Module [Person A — Week 1–2]
 
-- [ ] 2.1 Create `AuthModule` in NestJS: `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`
-- [ ] 2.2 Implement bcrypt password hashing (cost 12) and verification on login
-- [ ] 2.3 Implement JWT access token generation (15-min TTL, payload: user_id, roles[], iat, exp)
-- [ ] 2.4 Implement refresh token generation (7-day TTL, payload: user_id, jti, exp) and set as HTTP-only cookie
-- [ ] 2.5 Implement refresh token rotation: verify jti is not in Redis blocklist, issue new token pair, revoke old token by storing jti in Redis with TTL = remaining lifetime
-- [ ] 2.6 Create `JwtAuthGuard` (NestJS guard) to verify the access token on all protected endpoints
-- [ ] 2.7 Create `RolesGuard` and `@Roles()` decorator to enforce RBAC per role
-- [ ] 2.8 Create `AuditLogService` to write records for: login attempts, role changes, workshop create/update/cancel, token revocation
-- [ ] 2.9 Create `UsersModule`: `POST /admin/users/:id/roles` (ADMIN assigns/removes roles)
-- [ ] 2.10 Write unit tests: successful login, wrong password, locked account, role guard enforcement, refresh token rotation
+- [x] 2.1 Create `AuthModule` in NestJS: `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`
+- [x] 2.2 Implement bcrypt password hashing (cost 12) and verification on login
+- [x] 2.3 Implement JWT access token generation (15-min TTL, payload: user_id, roles[], iat, exp)
+- [x] 2.4 Implement refresh token generation (7-day TTL, payload: user_id, jti, exp) and set as HTTP-only cookie
+- [x] 2.5 Implement refresh token rotation: verify jti is not in Redis blocklist, issue new token pair, revoke old token by storing jti in Redis with TTL = remaining lifetime
+- [x] 2.6 Create `JwtAuthGuard` (NestJS guard) to verify the access token on all protected endpoints
+- [x] 2.7 Create `RolesGuard` and `@Roles()` decorator to enforce RBAC per role
+- [x] 2.8 Create `AuditLogService` to write records for: login attempts, role changes, workshop create/update/cancel, token revocation
+- [x] 2.9 Create `UsersModule`: `POST /admin/users/:id/roles` (ADMIN assigns/removes roles)
+- [x] 2.10 Write unit tests: successful login, wrong password, locked account, role guard enforcement, refresh token rotation
 
 ## 3. Workshop Catalog Module [Person B — Week 1–2]
 
