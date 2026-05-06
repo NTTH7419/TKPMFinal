@@ -27,18 +27,18 @@
 
 ## 3. Workshop Catalog Module [Person B — Week 1–2]
 
-- [ ] 3.1 Create `WorkshopModule` in NestJS with the Workshop entity
-- [ ] 3.2 Implement `POST /admin/workshops` (ORGANIZER/ADMIN): create workshop, validate required fields, set status=DRAFT
-- [ ] 3.3 Implement `PATCH /admin/workshops/:id` (ORGANIZER/ADMIN): update fields, emit WorkshopUpdated event when room or time changes
-- [ ] 3.4 Implement `POST /admin/workshops/:id/open` (ORGANIZER/ADMIN): transition DRAFT → OPEN
-- [ ] 3.5 Implement `POST /admin/workshops/:id/cancel` (ORGANIZER/ADMIN): transition → CANCELLED, emit WorkshopCancelled event
-- [ ] 3.6 Implement `GET /workshops` (public): paginated list of OPEN workshops
-- [ ] 3.7 Implement `GET /workshops/:id` (public): full workshop detail including room_map_url and ai_summary
-- [ ] 3.8 Implement `GET /admin/workshops/:id/stats` (ORGANIZER/ADMIN): return total_registrations, confirmed_count, pending_payment_count, checkin_count, utilization_pct
-- [ ] 3.9 Implement SSE endpoint `GET /workshops/:id/seats` (backend): subscribe to Redis Pub/Sub channel `ws:{workshop_id}:seats`, push `{ remaining_seats, held_count, confirmed_count }` to connected clients; on client disconnect, unsubscribe from Redis channel
-- [ ] 3.10 Configure Student Web to consume the SSE endpoint: use the `EventSource` API to connect to `GET /workshops/:id/seats`, update seat count UI on each message, auto-reconnect on disconnect
-- [ ] 3.11 Build Admin Web UI: workshop list, create/edit form, open/cancel actions, statistics page
-- [ ] 3.12 Build Student Web UI: workshop list with realtime seat count badge, workshop detail page
+- [x] 3.1 Create `WorkshopModule` in NestJS with the Workshop entity
+- [x] 3.2 Implement `POST /admin/workshops` (ORGANIZER/ADMIN): create workshop, validate required fields, set status=DRAFT
+- [x] 3.3 Implement `PATCH /admin/workshops/:id` (ORGANIZER/ADMIN): update fields, emit WorkshopUpdated event when room or time changes
+- [x] 3.4 Implement `POST /admin/workshops/:id/open` (ORGANIZER/ADMIN): transition DRAFT → OPEN
+- [x] 3.5 Implement `POST /admin/workshops/:id/cancel` (ORGANIZER/ADMIN): transition → CANCELLED, emit WorkshopCancelled event
+- [x] 3.6 Implement `GET /workshops` (public): paginated list of OPEN workshops
+- [x] 3.7 Implement `GET /workshops/:id` (public): full workshop detail including room_map_url and ai_summary
+- [x] 3.8 Implement `GET /admin/workshops/:id/stats` (ORGANIZER/ADMIN): return total_registrations, confirmed_count, pending_payment_count, checkin_count, utilization_pct
+- [x] 3.9 Implement SSE endpoint `GET /workshops/:id/seats` (backend): subscribe to Redis Pub/Sub channel `ws:{workshop_id}:seats`, push `{ remaining_seats, held_count, confirmed_count }` to connected clients; on client disconnect, unsubscribe from Redis channel
+- [x] 3.10 Configure Student Web to consume the SSE endpoint: use the `EventSource` API to connect to `GET /workshops/:id/seats`, update seat count UI on each message, auto-reconnect on disconnect
+- [x] 3.11 Build Admin Web UI: workshop list, create/edit form, open/cancel actions, statistics page
+- [x] 3.12 Build Student Web UI: workshop list with realtime seat count badge, workshop detail page
 
 ## 4. Registration Module [Person C — Week 2–3]
 

@@ -2,7 +2,7 @@ import { Injectable, ExecutionContext, UnauthorizedException, Inject } from '@ne
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import Redis from 'ioredis';
-import { REDIS_CLIENT } from '../redis/redis.module';
+import { REDIS_CLIENT } from '../../redis/redis.module';
 import { REDIS_KEYS } from '@unihub/shared';
 
 @Injectable()
@@ -33,10 +33,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return true;
   }
 
-  handleRequest(err: unknown, user: unknown) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  handleRequest<TUser = any>(err: any, user: any, _info: any, _context: any, _status?: any): TUser {
     if (err || !user) {
       throw new UnauthorizedException('Invalid or expired token');
     }
-    return user;
+    return user as TUser;
   }
 }
+
