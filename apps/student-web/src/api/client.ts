@@ -18,6 +18,24 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
   return res.json();
 }
 
+export async function apiFetchText(path: string, options?: RequestInit): Promise<string> {
+  const token = localStorage.getItem('access_token');
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options?.headers,
+    },
+    credentials: 'include',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(err.message || 'API error');
+  }
+  return res.text();
+}
+
 export interface WorkshopSummary {
   id: string;
   title: string;
@@ -37,6 +55,22 @@ export interface WorkshopDetail extends WorkshopSummary {
   roomMapUrl?: string;
   summaryStatus: string;
   aiSummary?: string;
+}
+
+export interface MyRegistration {
+  id: string;
+  status: string;
+  createdAt: string;
+  holdExpiresAt?: string;
+  workshop: {
+    id: string;
+    title: string;
+    speakerName: string;
+    roomName: string;
+    startsAt: string;
+    endsAt: string;
+    feeType: string;
+  };
 }
 
 export function getWorkshops(page = 1, limit = 20) {
@@ -60,4 +94,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ workshopId, idempotencyKey }),
     }),
+  getMyRegistrations: () =>
+    apiFetch<MyRegistration[]>('/me/registrations'),
+  getQrCode: (registrationId: string) =>
+    apiFetchText(`/me/registrations/${registrationId}/qr`),
 };

@@ -5,6 +5,7 @@ import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { REDIS_CLIENT } from '../redis/redis.module';
+import { AuditLogService } from '../audit/audit-log.service';
 import * as bcrypt from 'bcryptjs';
 
 const mockUser = {
@@ -59,6 +60,7 @@ describe('AuthService', () => {
         { provide: JwtService, useValue: mockJwt },
         { provide: ConfigService, useValue: mockConfig },
         { provide: REDIS_CLIENT, useValue: mockRedis },
+        { provide: AuditLogService, useValue: { log: jest.fn() } },
       ],
     }).compile();
 

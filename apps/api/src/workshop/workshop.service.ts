@@ -11,6 +11,7 @@ import { REDIS_CLIENT } from '../redis/redis.module';
 import { REDIS_KEYS, WorkshopStatus, NotificationEventType } from '@unihub/shared';
 import { CreateWorkshopDto } from './dto/create-workshop.dto';
 import { UpdateWorkshopDto } from './dto/update-workshop.dto';
+import { AuditLogService } from '../audit/audit-log.service';
 
 @Injectable()
 export class WorkshopService {
@@ -18,10 +19,11 @@ export class WorkshopService {
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
     @Inject(REDIS_CLIENT) private redis: Redis,
+    private auditLog: AuditLogService,
   ) {}
 
   // ─── Task 3.2: Create workshop ────────────────────────────────────────────────
-  async create(dto: CreateWorkshopDto) {
+  async create(dto: CreateWorkshopDto, actorId?: string) {
     const workshop = await this.prisma.workshop.create({
       data: {
         title: dto.title,
@@ -37,11 +39,13 @@ export class WorkshopService {
       },
     });
 
+    this.auditLog.log({ action: 'WORKSHOP_CREATED', actorId, targetId: workshop.id, metadata: { title: workshop.title } });
+
     return workshop;
   }
 
   // ─── Task 3.3: Update workshop + emit event if room/time changed ──────────────
-  async update(id: string, dto: UpdateWorkshopDto) {
+  async update(id: string, dto: UpdateWorkshopDto, actorId?: string) {
     const existing = await this.findOneOrThrow(id);
 
     const roomOrTimeChanged =
@@ -68,6 +72,7 @@ export class WorkshopService {
         workshopId: id,
         changes: { roomName: dto.roomName, startsAt: dto.startsAt, endsAt: dto.endsAt },
       });
+      this.auditLog.log({ action: 'WORKSHOP_UPDATED', actorId, targetId: id, metadata: { changes: dto } });
     }
 
     return updated;
@@ -88,7 +93,7 @@ export class WorkshopService {
   }
 
   // ─── Task 3.5: Cancel + emit WorkshopCancelled ────────────────────────────────
-  async cancel(id: string) {
+  async cancel(id: string, actorId?: string) {
     const workshop = await this.findOneOrThrow(id);
 
     if (workshop.status === WorkshopStatus.CANCELLED) {
@@ -104,6 +109,7 @@ export class WorkshopService {
       workshopId: id,
       title: workshop.title,
     });
+    this.auditLog.log({ action: 'WORKSHOP_CANCELLED', actorId, targetId: id, metadata: { title: workshop.title } });
 
     return updated;
   }
@@ -196,6 +202,7 @@ export class WorkshopService {
       confirmedCount,
       pendingPaymentCount,
       checkinCount,
+      capacity: workshop.capacity,
       utilizationPct,
     };
   }

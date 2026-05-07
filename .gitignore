@@ -56,3 +56,7 @@ Thumbs.db
 
 # PNPM
 .pnpm-store/
+
+# graphify
+graphify-out/
+.graphify*

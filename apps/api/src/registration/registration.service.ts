@@ -9,6 +9,7 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import * as crypto from 'crypto';
+import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkshopService } from '../workshop/workshop.service';
 import { REDIS_KEYS, WorkshopStatus } from '@unihub/shared';
@@ -87,15 +88,19 @@ export class RegistrationService {
 
       if (isFree) {
         // ── Task 4.4: FREE workshop — CONFIRMED immediately ──
+        const registrationId = crypto.randomUUID();
+        const expiresAt = new Date(w.ends_at.getTime() + QR_EXPIRY_BUFFER_MINUTES * 60 * 1000);
         const qrHash = this.generateQrHash({
+          registrationId,
           workshopId: dto.workshopId,
           studentId: student.id,
-          expiresAt: new Date(w.ends_at.getTime() + QR_EXPIRY_BUFFER_MINUTES * 60 * 1000),
+          expiresAt,
         });
 
         const [registration] = await Promise.all([
           tx.registration.create({
             data: {
+              id: registrationId,
               workshopId: dto.workshopId,
               studentId: student.id,
               status: 'CONFIRMED',
@@ -194,30 +199,33 @@ export class RegistrationService {
       throw new BadRequestException('QR code not yet generated');
     }
 
-    // Re-build QR payload so frontend can render it as a QR image
+    // Build QR payload and generate PNG as base64 data URL
     const expiresAt = new Date(
       registration.workshop.endsAt.getTime() + QR_EXPIRY_BUFFER_MINUTES * 60 * 1000,
     );
-    const payload = {
+    const payload = JSON.stringify({
       registrationId: registration.id,
       workshopId: registration.workshopId,
       studentId: registration.studentId,
       expiresAt: expiresAt.toISOString(),
-    };
-    const payloadStr = JSON.stringify(payload);
-    const qrData = Buffer.from(payloadStr).toString('base64url');
+      hash: registration.qrTokenHash,
+    });
 
-    return qrData; // frontend encodes this as a QR code
+    // Returns "data:image/png;base64,..." — displayable directly as <img src>
+    return QRCode.toDataURL(payload, { errorCorrectionLevel: 'M', width: 300 });
   }
 
   // ─── Task 4.7: HMAC-SHA256 QR generation ─────────────────────────────────────
   private generateQrHash(data: {
+    registrationId: string;
     workshopId: string;
     studentId: string;
     expiresAt: Date;
   }): string {
     const payload = JSON.stringify({
-      ...data,
+      registrationId: data.registrationId,
+      workshopId: data.workshopId,
+      studentId: data.studentId,
       expiresAt: data.expiresAt.toISOString(),
     });
     return crypto

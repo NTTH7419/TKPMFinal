@@ -22,6 +22,7 @@ import { UpdateWorkshopDto } from './dto/update-workshop.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { Role, REDIS_KEYS } from '@unihub/shared';
 
@@ -102,16 +103,16 @@ export class WorkshopController {
   @Post('admin/workshops')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ORGANIZER, Role.ADMIN)
-  create(@Body() dto: CreateWorkshopDto) {
-    return this.workshopService.create(dto);
+  create(@Body() dto: CreateWorkshopDto, @CurrentUser() user: { id: string }) {
+    return this.workshopService.create(dto, user.id);
   }
 
   // PATCH /admin/workshops/:id
   @Patch('admin/workshops/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ORGANIZER, Role.ADMIN)
-  update(@Param('id') id: string, @Body() dto: UpdateWorkshopDto) {
-    return this.workshopService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateWorkshopDto, @CurrentUser() user: { id: string }) {
+    return this.workshopService.update(id, dto, user.id);
   }
 
   // POST /admin/workshops/:id/open
@@ -126,8 +127,8 @@ export class WorkshopController {
   @Post('admin/workshops/:id/cancel')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ORGANIZER, Role.ADMIN)
-  cancel(@Param('id') id: string) {
-    return this.workshopService.cancel(id);
+  cancel(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+    return this.workshopService.cancel(id, user.id);
   }
 
   // GET /admin/workshops/:id/stats
