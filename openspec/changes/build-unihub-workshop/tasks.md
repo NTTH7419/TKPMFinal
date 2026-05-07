@@ -42,17 +42,17 @@
 
 ## 4. Registration Module [Person C — Week 2–3]
 
-- [ ] 4.1 Create `RegistrationModule` in NestJS with the Registration entity
-- [ ] 4.2 Implement student validation: check `students.user_id = current_user.id` and `status = ACTIVE` before creating a registration
-- [ ] 4.3 Implement `POST /registrations` with PostgreSQL row lock (`SELECT ... FOR UPDATE` on the workshop row) inside a transaction
-- [ ] 4.4 Implement free workshop logic: create registration CONFIRMED immediately, increment confirmed_count, generate QR
-- [ ] 4.5 Implement paid workshop logic: create registration PENDING_PAYMENT, set hold_expires_at (+10 min), increment held_count
-- [ ] 4.6 Implement idempotency key: check `registrations.idempotency_key` before creating, return existing result if key matches
-- [ ] 4.7 Implement QR generation: HMAC-SHA256 sign with payload (registrationId, workshopId, studentId, expiresAt = end_time + 30 min), store the hash
-- [ ] 4.8 Implement `GET /me/registrations` (STUDENT): list the student's own registrations
-- [ ] 4.9 Implement `GET /me/registrations/:id/qr` (STUDENT): return QR image (base64 PNG) if status=CONFIRMED
-- [ ] 4.10 Implement BullMQ job `expire-hold`: enqueue as a **delayed job** targeting a specific `registrationId` (delay = 10 minutes from creation); on execution, check if the registration is still PENDING_PAYMENT — if yes, transition it to EXPIRED, decrement `workshops.held_count`, and emit `RegistrationExpired` event; if already CONFIRMED or CANCELLED, skip (idempotent)
-- [ ] 4.11 Write tests: 100 concurrent requests for the last seat, idempotency retry, hold expiration
+- [x] 4.1 Create `RegistrationModule` in NestJS with the Registration entity
+- [x] 4.2 Implement student validation: check `students.user_id = current_user.id` and `status = ACTIVE` before creating a registration
+- [x] 4.3 Implement `POST /registrations` with PostgreSQL row lock (`SELECT ... FOR UPDATE` on the workshop row) inside a transaction
+- [x] 4.4 Implement free workshop logic: create registration CONFIRMED immediately, increment confirmed_count, generate QR
+- [x] 4.5 Implement paid workshop logic: create registration PENDING_PAYMENT, set hold_expires_at (+10 min), increment held_count
+- [x] 4.6 Implement idempotency key: check `registrations.idempotency_key` before creating, return existing result if key matches
+- [x] 4.7 Implement QR generation: HMAC-SHA256 sign with payload (registrationId, workshopId, studentId, expiresAt = end_time + 30 min), store the hash
+- [x] 4.8 Implement `GET /me/registrations` (STUDENT): list the student's own registrations
+- [x] 4.9 Implement `GET /me/registrations/:id/qr` (STUDENT): return QR image (base64 PNG) if status=CONFIRMED
+- [x] 4.10 Implement BullMQ job `expire-hold`: enqueue as a **delayed job** targeting a specific `registrationId` (delay = 10 minutes from creation); on execution, check if the registration is still PENDING_PAYMENT — if yes, transition it to EXPIRED, decrement `workshops.held_count`, and emit `RegistrationExpired` event; if already CONFIRMED or CANCELLED, skip (idempotent)
+- [x] 4.11 Write tests: 100 concurrent requests for the last seat, idempotency retry, hold expiration
 
 ## 5. Load Protection Module [Person A — Week 2–3]
 

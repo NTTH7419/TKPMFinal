@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getWorkshop, WorkshopDetail } from '../api/client';
+import { getWorkshop, WorkshopDetail, api } from '../api/client';
 import { useSeatStream } from '../hooks/useSeatStream';
 
 function formatDate(iso: string) {
@@ -15,6 +15,8 @@ export function WorkshopDetailPage({
 }) {
   const [workshop, setWorkshop] = useState<WorkshopDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [registering, setRegistering] = useState(false);
+  const [msg, setMsg] = useState('');
   const { seatData } = useSeatStream(workshopId);
 
   useEffect(() => {
@@ -22,6 +24,24 @@ export function WorkshopDetailPage({
       .then(setWorkshop)
       .finally(() => setLoading(false));
   }, [workshopId]);
+
+  const handleRegister = async () => {
+    setRegistering(true);
+    setMsg('');
+    try {
+      const idempotencyKey = crypto.randomUUID();
+      const res = await api.registerWorkshop(workshopId, idempotencyKey);
+      if (res.status === 'CONFIRMED') {
+        setMsg('✅ Đăng ký thành công!');
+      } else if (res.status === 'PENDING_PAYMENT') {
+        setMsg('⏳ Vui lòng thanh toán trong 10 phút!');
+      }
+    } catch (e: any) {
+      setMsg(`❌ ${e.message}`);
+    } finally {
+      setRegistering(false);
+    }
+  };
 
   if (loading) return <div style={styles.loading}>Đang tải...</div>;
   if (!workshop) return <div style={styles.loading}>Không tìm thấy workshop</div>;
@@ -68,11 +88,18 @@ export function WorkshopDetailPage({
           </div>
         )}
 
+        {msg && (
+          <div style={{ padding: 12, borderRadius: 8, marginBottom: 16, textAlign: 'center', background: msg.startsWith('❌') ? '#fee2e2' : '#dcfce7', color: msg.startsWith('❌') ? '#ef4444' : '#166534', fontWeight: 600 }}>
+            {msg}
+          </div>
+        )}
+
         <button
-          disabled={remaining === 0}
-          style={{ ...styles.registerBtn, opacity: remaining === 0 ? 0.5 : 1 }}
+          onClick={handleRegister}
+          disabled={remaining === 0 || registering}
+          style={{ ...styles.registerBtn, opacity: (remaining === 0 || registering) ? 0.5 : 1 }}
         >
-          {remaining > 0 ? 'Đăng ký tham dự' : 'Hết chỗ'}
+          {registering ? 'Đang xử lý...' : (remaining > 0 ? 'Đăng ký tham dự' : 'Hết chỗ')}
         </button>
       </div>
     </div>

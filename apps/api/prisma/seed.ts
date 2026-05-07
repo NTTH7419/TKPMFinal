@@ -65,6 +65,41 @@ async function main() {
   });
   console.log('✅ Demo organizer seeded');
 
+  // ─── Seed Demo Student ───────────────────────────────────────────────────────
+  const studentPasswordHash = await bcrypt.hash('Student@123', 12);
+  const studentUser = await prisma.user.upsert({
+    where: { email: 'student@unihub.edu.vn' },
+    update: {},
+    create: {
+      email: 'student@unihub.edu.vn',
+      passwordHash: studentPasswordHash,
+      fullName: 'Nguyễn Văn A',
+      status: 'ACTIVE',
+    },
+  });
+
+  const studentRole = await prisma.role.findUniqueOrThrow({ where: { code: 'STUDENT' } });
+  await prisma.userRole.upsert({
+    where: { userId_roleId: { userId: studentUser.id, roleId: studentRole.id } },
+    update: {},
+    create: { userId: studentUser.id, roleId: studentRole.id },
+  });
+
+  // Must have a linked Student record to pass the Registration Guard
+  await prisma.student.upsert({
+    where: { studentCode: 'SE123456' },
+    update: { userId: studentUser.id },
+    create: {
+      studentCode: 'SE123456',
+      email: 'student@unihub.edu.vn',
+      fullName: 'Nguyễn Văn A',
+      faculty: 'Software Engineering',
+      status: 'ACTIVE',
+      userId: studentUser.id,
+    },
+  });
+  console.log('✅ Demo student seeded (student@unihub.edu.vn / Student@123)');
+
   console.log('\n🎉 Database seeded successfully!');
 }
 

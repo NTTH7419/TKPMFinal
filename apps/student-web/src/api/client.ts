@@ -48,3 +48,16 @@ export function getWorkshops(page = 1, limit = 20) {
 export function getWorkshop(id: string) {
   return apiFetch<WorkshopDetail>(`/workshops/${id}`);
 }
+
+export const api = {
+  login: (email: string, password: string) =>
+    apiFetch<any>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    }),
+  registerWorkshop: (workshopId: string, idempotencyKey: string) =>
+    apiFetch<{ id: string; status: string; qrTokenHash?: string }>('/registrations', {
+      method: 'POST',
+      body: JSON.stringify({ workshopId, idempotencyKey }),
+    }),
+};
