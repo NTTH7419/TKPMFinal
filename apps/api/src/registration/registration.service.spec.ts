@@ -2,8 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RegistrationService } from './registration.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkshopService } from '../workshop/workshop.service';
+import { QueueTokenService } from '../load-protection/queue-token.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { ConflictException, ForbiddenException } from '@nestjs/common';
+
+const mockQueueTokenService = {
+  consumeToken: jest.fn().mockResolvedValue(undefined),
+};
 
 const mockQueue = { add: jest.fn().mockResolvedValue(undefined) };
 
@@ -58,6 +63,7 @@ describe('RegistrationService', () => {
         RegistrationService,
         { provide: PrismaService, useValue: prisma },
         { provide: WorkshopService, useValue: { publishSeatUpdate: jest.fn().mockResolvedValue(undefined) } },
+        { provide: QueueTokenService, useValue: mockQueueTokenService },
         { provide: getQueueToken('expire-hold'), useValue: mockQueue },
       ],
     }).compile();
@@ -93,6 +99,7 @@ describe('RegistrationService', () => {
           })),
         }},
         { provide: WorkshopService, useValue: { publishSeatUpdate: jest.fn().mockResolvedValue(undefined) } },
+        { provide: QueueTokenService, useValue: mockQueueTokenService },
         { provide: getQueueToken('expire-hold'), useValue: mockQueue },
       ],
     }).compile();

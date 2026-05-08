@@ -4,7 +4,6 @@ import {
   ForbiddenException,
   ConflictException,
   BadRequestException,
-  Inject,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -12,7 +11,8 @@ import * as crypto from 'crypto';
 import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkshopService } from '../workshop/workshop.service';
-import { REDIS_KEYS, WorkshopStatus } from '@unihub/shared';
+import { QueueTokenService } from '../load-protection/queue-token.service';
+import { WorkshopStatus } from '@unihub/shared';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
 
 const QR_EXPIRY_BUFFER_MINUTES = 30;
@@ -22,6 +22,7 @@ export class RegistrationService {
   constructor(
     private prisma: PrismaService,
     private workshopService: WorkshopService,
+    private queueTokenService: QueueTokenService,
     @InjectQueue('expire-hold') private expireHoldQueue: Queue,
   ) {}
 
@@ -32,6 +33,9 @@ export class RegistrationService {
       where: { idempotencyKey: dto.idempotencyKey },
     });
     if (existing) return existing; // return cached result
+
+    // ── Task 5.6: Consume queue token (one-time-use, throws 401 if absent) ──
+    await this.queueTokenService.consumeToken(userId, dto.workshopId);
 
     // ── Task 4.2: Validate student record ──
     const student = await this.prisma.student.findFirst({

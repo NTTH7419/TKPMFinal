@@ -57,14 +57,14 @@
 
 ## 5. Load Protection Module [Person A — Week 2–3]
 
-- [ ] 5.1 Implement `TokenBucketRateLimiter` service using Redis (ioredis): atomic Lua script for check-and-consume
-- [ ] 5.2 Create `RateLimitGuard` in NestJS: apply token bucket check per endpoint tier (ip, user_id, user_id+workshop_id)
-- [ ] 5.3 Configure rate limits for all 4 tiers: public listing (60 burst / 10 refill/s), login (10/1s), registration (5 burst / 1 per 30s per user+workshop), admin (30/5s)
-- [ ] 5.4 Implement 429 response with `Retry-After` header when limits are exceeded
-- [ ] 5.5 Implement `POST /workshops/:id/queue-token` (STUDENT): issue a Redis key `queue:{userId}:{workshopId}` with 120-second TTL
-- [ ] 5.6 Implement queue token validation in the registration flow: verify the token exists in Redis and delete it immediately on use (one-time-use)
-- [ ] 5.7 Implement queue token issuance throttle: cap the number of tokens issued per second per workshop using a Redis counter
-- [ ] 5.8 Write tests: rate limit enforcement returns 429, queue token is one-time-use, expired token is rejected
+- [x] 5.1 Implement `TokenBucketRateLimiter` service using Redis (ioredis): atomic Lua script for check-and-consume
+- [x] 5.2 Create `RateLimitGuard` in NestJS: apply token bucket check per endpoint tier (ip, user_id, user_id+workshop_id)
+- [x] 5.3 Configure rate limits for all 4 tiers: public listing (60 burst / 10 refill/s), login (10/1s), registration (5 burst / 1 per 30s per user+workshop), admin (30/5s)
+- [x] 5.4 Implement 429 response with `Retry-After` header when limits are exceeded
+- [x] 5.5 Implement `POST /workshops/:id/queue-token` (STUDENT): issue a Redis key `queue:{userId}:{workshopId}` with 120-second TTL
+- [x] 5.6 Implement queue token validation in the registration flow: verify the token exists in Redis and delete it immediately on use (one-time-use)
+- [x] 5.7 Implement queue token issuance throttle: cap the number of tokens issued per second per workshop using a Redis counter
+- [x] 5.8 Write tests: rate limit enforcement returns 429, queue token is one-time-use, expired token is rejected
 
 ## 6. Payment Module [Person B — Week 3–4]
 

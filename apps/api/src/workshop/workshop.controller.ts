@@ -9,11 +9,9 @@ import {
   UseGuards,
   ParseIntPipe,
   DefaultValuePipe,
-  Res,
   Sse,
   Inject,
 } from '@nestjs/common';
-import { Response } from 'express';
 import { Observable } from 'rxjs';
 import Redis from 'ioredis';
 import { WorkshopService } from './workshop.service';
@@ -25,6 +23,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { Role, REDIS_KEYS } from '@unihub/shared';
+import { RateLimit, RateLimitTier } from '../load-protection/rate-limit.decorator';
 
 @Controller()
 export class WorkshopController {
@@ -37,6 +36,7 @@ export class WorkshopController {
 
   // GET /workshops
   @Get('workshops')
+  @RateLimit(RateLimitTier.PUBLIC_LISTING)
   findAll(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
@@ -51,20 +51,15 @@ export class WorkshopController {
   }
 
   // ─── Task 3.9: SSE endpoint — GET /workshops/:id/seats ───────────────────────
-  // Subscribes to Redis Pub/Sub and pushes seat updates to the client
   @Get('workshops/:id/seats')
   @Sse()
   seatStream(@Param('id') workshopId: string): Observable<MessageEvent> {
     return new Observable<MessageEvent>((observer) => {
-      // Each SSE connection needs a dedicated Redis subscriber (pub/sub is connection-level)
       const subscriber = this.redis.duplicate();
-
       const channel = REDIS_KEYS.sseSeats(workshopId);
 
       subscriber.subscribe(channel, (err) => {
-        if (err) {
-          observer.error(err);
-        }
+        if (err) observer.error(err);
       });
 
       subscriber.on('message', (_channel: string, message: string) => {
@@ -77,7 +72,6 @@ export class WorkshopController {
 
       subscriber.on('error', (err) => observer.error(err));
 
-      // Cleanup on client disconnect
       return () => {
         subscriber.unsubscribe(channel).catch(() => {});
         subscriber.quit().catch(() => {});
@@ -91,6 +85,7 @@ export class WorkshopController {
   @Get('admin/workshops')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ORGANIZER, Role.ADMIN)
+  @RateLimit(RateLimitTier.ADMIN)
   findAllAdmin(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
@@ -99,10 +94,10 @@ export class WorkshopController {
   }
 
   // POST /admin/workshops
-
   @Post('admin/workshops')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ORGANIZER, Role.ADMIN)
+  @RateLimit(RateLimitTier.ADMIN)
   create(@Body() dto: CreateWorkshopDto, @CurrentUser() user: { id: string }) {
     return this.workshopService.create(dto, user.id);
   }
@@ -111,6 +106,7 @@ export class WorkshopController {
   @Patch('admin/workshops/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ORGANIZER, Role.ADMIN)
+  @RateLimit(RateLimitTier.ADMIN)
   update(@Param('id') id: string, @Body() dto: UpdateWorkshopDto, @CurrentUser() user: { id: string }) {
     return this.workshopService.update(id, dto, user.id);
   }
@@ -119,6 +115,7 @@ export class WorkshopController {
   @Post('admin/workshops/:id/open')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ORGANIZER, Role.ADMIN)
+  @RateLimit(RateLimitTier.ADMIN)
   open(@Param('id') id: string) {
     return this.workshopService.open(id);
   }
@@ -127,6 +124,7 @@ export class WorkshopController {
   @Post('admin/workshops/:id/cancel')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ORGANIZER, Role.ADMIN)
+  @RateLimit(RateLimitTier.ADMIN)
   cancel(@Param('id') id: string, @CurrentUser() user: { id: string }) {
     return this.workshopService.cancel(id, user.id);
   }
@@ -135,6 +133,7 @@ export class WorkshopController {
   @Get('admin/workshops/:id/stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ORGANIZER, Role.ADMIN)
+  @RateLimit(RateLimitTier.ADMIN)
   getStats(@Param('id') id: string) {
     return this.workshopService.getStats(id);
   }

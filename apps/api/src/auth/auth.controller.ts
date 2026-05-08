@@ -13,6 +13,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RateLimit, RateLimitTier } from '../load-protection/rate-limit.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -28,6 +29,7 @@ export class AuthController {
   // POST /auth/login
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @RateLimit(RateLimitTier.LOGIN)
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
