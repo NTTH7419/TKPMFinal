@@ -9,10 +9,11 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import * as crypto from 'crypto';
 import * as QRCode from 'qrcode';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkshopService } from '../workshop/workshop.service';
 import { QueueTokenService } from '../load-protection/queue-token.service';
-import { WorkshopStatus } from '@unihub/shared';
+import { WorkshopStatus, NotificationEventType } from '@unihub/shared';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
 
 const QR_EXPIRY_BUFFER_MINUTES = 30;
@@ -24,6 +25,7 @@ export class RegistrationService {
     private workshopService: WorkshopService,
     private queueTokenService: QueueTokenService,
     @InjectQueue('expire-hold') private expireHoldQueue: Queue,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   // ─── Task 4.2 + 4.3 + 4.4 + 4.5 + 4.6: POST /registrations ─────────────────
@@ -120,6 +122,13 @@ export class RegistrationService {
 
         // Publish seat update via Redis Pub/Sub (fire and forget)
         this.workshopService.publishSeatUpdate(dto.workshopId).catch(() => {});
+
+        // Emit RegistrationConfirmed for notification
+        this.eventEmitter.emit(NotificationEventType.REGISTRATION_CONFIRMED, {
+          registrationId,
+          workshopId: dto.workshopId,
+          studentId: student.id,
+        });
 
         return registration;
       } else {

@@ -219,12 +219,14 @@ model StudentImportRow {
 // ─── Notifications ────────────────────────────────────────────────────────────
 
 model NotificationEvent {
-  id              String   @id @default(uuid())
-  eventType       String   @map("event_type") // RegistrationConfirmed | PaymentSucceeded | etc.
-  recipientUserId String   @map("recipient_user_id")
+  id              String    @id @default(uuid())
+  eventType       String    @map("event_type") // RegistrationConfirmed | PaymentSucceeded | etc.
+  recipientUserId String    @map("recipient_user_id")
   payload         Json
-  status          String   @default("PENDING") // PENDING | PROCESSED
-  createdAt       DateTime @default(now()) @map("created_at")
+  status          String    @default("PENDING") // PENDING | PROCESSED
+  isRead          Boolean   @default(false) @map("is_read")
+  readAt          DateTime? @map("read_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
 
   recipient     User                    @relation(fields: [recipientUserId], references: [id])
   deliveries    NotificationDelivery[]

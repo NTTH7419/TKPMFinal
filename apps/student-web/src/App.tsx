@@ -4,6 +4,7 @@ import { WorkshopDetailPage } from './pages/WorkshopDetailPage';
 import { MyRegistrationsPage } from './pages/MyRegistrationsPage';
 import { LoginPage } from './pages/LoginPage';
 import { PaymentCheckoutPage } from './pages/PaymentCheckoutPage';
+import NotificationBell from './components/NotificationBell';
 
 type Tab = 'workshops' | 'my-registrations';
 
@@ -65,6 +66,7 @@ export default function App() {
           </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <NotificationBell />
           <span style={{ color: '#eff6ff', fontSize: 14 }}>{user.fullName}</span>
           <button onClick={logout} style={{ background: 'none', border: '1px solid #93c5fd', color: '#fff', padding: '4px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}>Đăng xuất</button>
         </div>

@@ -83,6 +83,16 @@ export function getWorkshop(id: string) {
   return apiFetch<WorkshopDetail>(`/workshops/${id}`);
 }
 
+export interface Notification {
+  id: string;
+  eventType: string;
+  payload: Record<string, unknown>;
+  isRead: boolean;
+  readAt?: string;
+  createdAt: string;
+  deliveries: Array<{ status: string; sentAt?: string }>;
+}
+
 export const api = {
   login: (email: string, password: string) =>
     apiFetch<any>('/auth/login', {
@@ -107,4 +117,8 @@ export const api = {
     apiFetch<{ queueToken: string }>(`/workshops/${workshopId}/queue-token`, {
       method: 'POST',
     }),
+  getNotifications: () =>
+    apiFetch<Notification[]>('/me/notifications'),
+  markNotificationRead: (id: string) =>
+    apiFetch<{ ok: boolean }>(`/me/notifications/${id}/read`, { method: 'PATCH' }),
 };

@@ -83,19 +83,19 @@
 
 ## 7. Notification Module [Person C — Week 3–4]
 
-- [ ] 7.1 Create `NotificationModule` in NestJS with the `NotificationChannel` interface (method: `send(event, recipient)`)
-- [ ] 7.2 Implement `InAppNotificationChannel`: write to `notification_events` and `notification_deliveries`, update delivery status
-- [ ] 7.3 Implement `EmailNotificationChannel` using the Resend SDK: send registration confirmation email with workshop details
-- [ ] 7.4 Implement the outbox pattern: Notification module subscribes to all domain events per the event-to-channel mapping:
+- [x] 7.1 Create `NotificationModule` in NestJS with the `NotificationChannel` interface (method: `send(event, recipient)`)
+- [x] 7.2 Implement `InAppNotificationChannel`: write to `notification_events` and `notification_deliveries`, update delivery status
+- [x] 7.3 Implement `EmailNotificationChannel` using the Resend SDK: send registration confirmation email with workshop details
+- [x] 7.4 Implement the outbox pattern: Notification module subscribes to all domain events per the event-to-channel mapping:
   - **Registration module**: `RegistrationConfirmed` (email + in-app), `RegistrationExpired` (in-app only)
   - **Payment module**: `PaymentSucceeded` (email + in-app, uses `registration_confirmed` template), `PaymentFailed` (in-app only)
   - **Workshop module**: `WorkshopUpdated` (email + in-app), `WorkshopCancelled` (email + in-app)
-- [ ] 7.5 Implement workshop-change notifications: query all CONFIRMED + PENDING_PAYMENT registrations for the workshop, enqueue notifications for each student
-- [ ] 7.6 Implement independent retry per channel: BullMQ jobs per channel with attempt_count and error_reason tracking
-- [ ] 7.7 Implement `GET /me/notifications` (authenticated): list unread and read notifications
-- [ ] 7.8 Implement `PATCH /me/notifications/:id/read` (authenticated): mark notification as read
-- [ ] 7.9 Build Student Web UI: notification bell with unread badge count, notification dropdown list
-- [ ] 7.10 Write tests: email failure does not roll back registration, per-channel retry, workshop cancellation triggers notifications to all registrants, `RegistrationExpired` sends in-app only, `PaymentFailed` sends in-app only, `PaymentSucceeded` sends email + in-app
+- [x] 7.5 Implement workshop-change notifications: query all CONFIRMED + PENDING_PAYMENT registrations for the workshop, enqueue notifications for each student
+- [x] 7.6 Implement independent retry per channel: BullMQ jobs per channel with attempt_count and error_reason tracking
+- [x] 7.7 Implement `GET /me/notifications` (authenticated): list unread and read notifications
+- [x] 7.8 Implement `PATCH /me/notifications/:id/read` (authenticated): mark notification as read
+- [x] 7.9 Build Student Web UI: notification bell with unread badge count, notification dropdown list
+- [x] 7.10 Write tests: email failure does not roll back registration, per-channel retry, workshop cancellation triggers notifications to all registrants, `RegistrationExpired` sends in-app only, `PaymentFailed` sends in-app only, `PaymentSucceeded` sends email + in-app
 
 ## 8. Check-in PWA [Person C — Week 4–5]
 

@@ -10,6 +10,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentAdapter } from './payment-adapter.interface';
 import { CircuitBreakerService } from './circuit-breaker.service';
+import { NotificationEventType } from '@unihub/shared';
 import * as crypto from 'crypto';
 
 const PAYMENT_INTENT_TIMEOUT_MS = 5000; // 5 seconds
@@ -204,8 +205,8 @@ export class PaymentService {
       });
     });
 
-    // Publish seat update
-    this.eventEmitter.emit('payment.succeeded', {
+    // Publish seat update + notification event
+    this.eventEmitter.emit(NotificationEventType.PAYMENT_SUCCEEDED, {
       registrationId: registration.id,
       workshopId: registration.workshopId,
     });
@@ -235,7 +236,7 @@ export class PaymentService {
     }
 
     // Emit payment failed event for notifications
-    this.eventEmitter.emit('payment.failed', {
+    this.eventEmitter.emit(NotificationEventType.PAYMENT_FAILED, {
       registrationId: registration.id,
       workshopId: registration.workshopId,
     });
