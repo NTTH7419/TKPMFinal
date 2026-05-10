@@ -60,3 +60,6 @@ Thumbs.db
 # graphify
 graphify-out/
 .graphify*
+
+# test files
+/test-flow

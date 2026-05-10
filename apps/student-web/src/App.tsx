@@ -3,6 +3,7 @@ import { WorkshopListPage } from './pages/WorkshopListPage';
 import { WorkshopDetailPage } from './pages/WorkshopDetailPage';
 import { MyRegistrationsPage } from './pages/MyRegistrationsPage';
 import { LoginPage } from './pages/LoginPage';
+import { PaymentCheckoutPage } from './pages/PaymentCheckoutPage';
 
 type Tab = 'workshops' | 'my-registrations';
 
@@ -12,6 +13,7 @@ export default function App() {
     return saved ? JSON.parse(saved) : null;
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [paymentRegistrationId, setPaymentRegistrationId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('workshops');
 
   const logout = () => {
@@ -68,8 +70,20 @@ export default function App() {
         </div>
       </nav>
       <div style={{ padding: '28px 32px', maxWidth: 1000, margin: '0 auto' }}>
-        {selectedId ? (
-          <WorkshopDetailPage workshopId={selectedId} onBack={() => setSelectedId(null)} />
+        {paymentRegistrationId ? (
+          <PaymentCheckoutPage
+            registrationId={paymentRegistrationId}
+            onSuccess={() => {
+              setPaymentRegistrationId(null);
+              setTab('my-registrations');
+            }}
+          />
+        ) : selectedId ? (
+          <WorkshopDetailPage
+            workshopId={selectedId}
+            onBack={() => setSelectedId(null)}
+            onPaymentRequired={setPaymentRegistrationId}
+          />
         ) : tab === 'my-registrations' ? (
           <MyRegistrationsPage />
         ) : (

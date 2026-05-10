@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID, IsOptional } from 'class-validator';
 
 export class CreateRegistrationDto {
   @IsUUID()
@@ -11,4 +11,12 @@ export class CreateRegistrationDto {
   @IsString()
   @IsNotEmpty()
   idempotencyKey: string;
+
+  /**
+   * Queue token: issued by POST /workshops/:id/queue-token
+   * Required for rate-limiting and queue protection
+   */
+  @IsString()
+  @IsOptional()
+  queueToken?: string;
 }

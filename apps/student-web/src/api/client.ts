@@ -98,4 +98,13 @@ export const api = {
     apiFetch<MyRegistration[]>('/me/registrations'),
   getQrCode: (registrationId: string) =>
     apiFetchText(`/me/registrations/${registrationId}/qr`),
+  createPaymentIntent: (registrationId: string, idempotencyKey: string) =>
+    apiFetch<{ paymentIntentId: string; paymentUrl: string }>('/payments/intent', {
+      method: 'POST',
+      body: JSON.stringify({ registrationId, idempotencyKey }),
+    }),
+  getQueueToken: (workshopId: string) =>
+    apiFetch<{ queueToken: string }>(`/workshops/${workshopId}/queue-token`, {
+      method: 'POST',
+    }),
 };

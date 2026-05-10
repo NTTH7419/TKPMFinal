@@ -9,9 +9,11 @@ function formatDate(iso: string) {
 export function WorkshopDetailPage({
   workshopId,
   onBack,
+  onPaymentRequired,
 }: {
   workshopId: string;
   onBack: () => void;
+  onPaymentRequired?: (registrationId: string) => void;
 }) {
   const [workshop, setWorkshop] = useState<WorkshopDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,12 +31,24 @@ export function WorkshopDetailPage({
     setRegistering(true);
     setMsg('');
     try {
+      // Task 5.5: Get queue token first
+      try {
+        await api.getQueueToken(workshopId);
+      } catch (e) {
+        throw new Error('Unable to get queue token: ' + (e as any).message);
+      }
+
       const idempotencyKey = crypto.randomUUID();
       const res = await api.registerWorkshop(workshopId, idempotencyKey);
       if (res.status === 'CONFIRMED') {
         setMsg('✅ Đăng ký thành công!');
       } else if (res.status === 'PENDING_PAYMENT') {
         setMsg('⏳ Vui lòng thanh toán trong 10 phút!');
+        setTimeout(() => {
+          if (onPaymentRequired) {
+            onPaymentRequired(res.id);
+          }
+        }, 500);
       }
     } catch (e: any) {
       setMsg(`❌ ${e.message}`);

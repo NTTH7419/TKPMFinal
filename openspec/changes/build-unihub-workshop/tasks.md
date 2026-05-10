@@ -68,18 +68,18 @@
 
 ## 6. Payment Module [Person B — Week 3–4]
 
-- [ ] 6.1 Create `PaymentModule` in NestJS with the `PaymentAdapter` interface (methods: createIntent, refund)
-- [ ] 6.2 Implement `MockPaymentAdapter`: generate a UUID payment_intent_id, persist to DB, return a mock payment URL
-- [ ] 6.3 Build a mock checkout page in Student Web: display payment details, "Pay" and "Cancel" buttons
-- [ ] 6.4 Implement mock webhook trigger: after user confirms on the checkout page, the mock sends a signed HMAC-SHA256 webhook to `POST /payments/webhook`
-- [ ] 6.5 Implement `POST /payments/webhook`: verify HMAC signature, process idempotently by payment_intent_id, update payment SUCCEEDED + registration CONFIRMED + generate QR
-- [ ] 6.6 Implement auto-refund: when a SUCCEEDED webhook arrives but registration is EXPIRED → call `PaymentAdapter.refund()` with an idempotency key
-- [ ] 6.7 Implement CircuitBreaker service using Redis: state key `cb:payment_gateway`, three states (Closed/Open/Half-Open), threshold: 5 consecutive failures OR >50% failure rate in 30s window (minimum 10 requests), gateway call timeout 5s, open duration 30s, 3 Half-Open probes
-- [ ] 6.8 Wrap all PaymentAdapter calls in the circuit breaker; when Open → return 503 with user-facing message
-- [ ] 6.9 Enforce `payments.idempotency_key` uniqueness: retry with the same key returns the existing intent
-- [ ] 6.10 Implement BullMQ job `payment-reconcile`: runs every 15 minutes (cron); queries all PENDING_PAYMENT registrations where `hold_expires_at` is older than 30 minutes AND no corresponding payment with status SUCCEEDED exists; for each stale record → transition registration to NEEDS_REVIEW, log to audit, notify admin via in-app notification
-- [ ] 6.11 Write tests: circuit breaker state transitions, duplicate webhook handling, auto-refund, idempotency
-- [ ] 6.12 Handle FAILED payment webhook: when gateway sends webhook with status FAILED, update `payments.status = FAILED`, transition registration to `FAILED`, decrement `workshops.held_count`, emit `PaymentFailed` event for notification; return `200 OK` (idempotent — duplicate FAILED webhooks are no-ops)
+- [x] 6.1 Create `PaymentModule` in NestJS with the `PaymentAdapter` interface (methods: createIntent, refund)
+- [x] 6.2 Implement `MockPaymentAdapter`: generate a UUID payment_intent_id, persist to DB, return a mock payment URL
+- [x] 6.3 Build a mock checkout page in Student Web: display payment details, "Pay" and "Cancel" buttons
+- [x] 6.4 Implement mock webhook trigger: after user confirms on the checkout page, the mock sends a signed HMAC-SHA256 webhook to `POST /payments/webhook`
+- [x] 6.5 Implement `POST /payments/webhook`: verify HMAC signature, process idempotently by payment_intent_id, update payment SUCCEEDED + registration CONFIRMED + generate QR
+- [x] 6.6 Implement auto-refund: when a SUCCEEDED webhook arrives but registration is EXPIRED → call `PaymentAdapter.refund()` with an idempotency key
+- [x] 6.7 Implement CircuitBreaker service using Redis: state key `cb:payment_gateway`, three states (Closed/Open/Half-Open), threshold: 5 consecutive failures OR >50% failure rate in 30s window (minimum 10 requests), gateway call timeout 5s, open duration 30s, 3 Half-Open probes
+- [x] 6.8 Wrap all PaymentAdapter calls in the circuit breaker; when Open → return 503 with user-facing message
+- [x] 6.9 Enforce `payments.idempotency_key` uniqueness: retry with the same key returns the existing intent
+- [x] 6.10 Implement BullMQ job `payment-reconcile`: runs every 15 minutes (cron); queries all PENDING_PAYMENT registrations where `hold_expires_at` is older than 30 minutes AND no corresponding payment with status SUCCEEDED exists; for each stale record → transition registration to NEEDS_REVIEW, log to audit, notify admin via in-app notification
+- [x] 6.11 Write tests: circuit breaker state transitions, duplicate webhook handling, auto-refund, idempotency
+- [x] 6.12 Handle FAILED payment webhook: when gateway sends webhook with status FAILED, update `payments.status = FAILED`, transition registration to `FAILED`, decrement `workshops.held_count`, emit `PaymentFailed` event for notification; return `200 OK` (idempotent — duplicate FAILED webhooks are no-ops)
 
 ## 7. Notification Module [Person C — Week 3–4]
 

@@ -150,7 +150,7 @@ export class RegistrationService {
           { registrationId: registration.id, workshopId: dto.workshopId },
           {
             delay: 10 * 60 * 1000, // 10 minutes
-            jobId: `expire-hold:${registration.id}`,
+            jobId: `expire-hold-${registration.id}`,
             removeOnComplete: true,
             removeOnFail: false,
           },

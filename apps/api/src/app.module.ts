@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { WorkshopModule } from './workshop/workshop.module';
 import { RegistrationModule } from './registration/registration.module';
 import { LoadProtectionModule } from './load-protection/load-protection.module';
+import { PaymentModule } from './payment/payment.module';
 import { RateLimitGuard } from './load-protection/rate-limit.guard';
 
 @Module({
@@ -42,6 +43,7 @@ import { RateLimitGuard } from './load-protection/rate-limit.guard';
     WorkshopModule,
     RegistrationModule,
     LoadProtectionModule,
+    PaymentModule,
   ],
   providers: [
     // RateLimitGuard is applied globally; routes without @RateLimit() are skipped automatically
