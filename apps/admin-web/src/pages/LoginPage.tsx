@@ -13,10 +13,13 @@ export function LoginPage({ onLogin }: { onLogin: (user: any) => void }) {
     setError('');
     try {
       const res = await api.login(email, password);
+      console.log('Login response:', res); // Debug
       localStorage.setItem('access_token', res.accessToken);
       localStorage.setItem('user', JSON.stringify(res.user));
+      console.log('Saved token:', localStorage.getItem('access_token')); // Debug
       onLogin(res.user);
     } catch (err: any) {
+      console.error('Login error:', err); // Debug
       setError(err.message || 'Đăng nhập thất bại');
     } finally {
       setLoading(false);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import type { AuthState } from '../App';
 
 interface Props {
@@ -12,6 +12,8 @@ export default function LoginPage({ onLogin }: Props) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const sessionReason = (location.state as { reason?: string } | null)?.reason;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,6 +47,11 @@ export default function LoginPage({ onLogin }: Props) {
   return (
     <div style={{ maxWidth: 360, margin: '80px auto', padding: '0 16px' }}>
       <h1 style={{ textAlign: 'center', marginBottom: 32 }}>UniHub Check-in</h1>
+      {sessionReason && (
+        <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: 6, padding: '10px 14px', marginBottom: 16, fontSize: 14, color: '#856404' }}>
+          {sessionReason}
+        </div>
+      )}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <input
           type="email"

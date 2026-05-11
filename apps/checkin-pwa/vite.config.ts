@@ -23,10 +23,31 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        runtimeCaching: [
+          {
+            urlPattern: /\/api\/checkin\/preload\/.+/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'checkin-preload',
+              networkTimeoutSeconds: 10,
+              expiration: { maxEntries: 20, maxAgeSeconds: 86400 },
+            },
+          },
+          {
+            urlPattern: /\/api\/workshops/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'workshops-list',
+              networkTimeoutSeconds: 10,
+              expiration: { maxEntries: 5, maxAgeSeconds: 300 },
+            },
+          },
+        ],
       },
     }),
   ],
   server: {
+    host: '0.0.0.0',
     port: 5175,
     proxy: {
       '/api': {

@@ -99,18 +99,18 @@
 
 ## 8. Check-in PWA [Person C — Week 4–5]
 
-- [ ] 8.1 Configure PWA manifest and service worker in `apps/checkin-pwa` using vite-plugin-pwa
-- [ ] 8.2 Build the CHECKIN_STAFF login screen (reuse auth flow from shared package)
-- [ ] 8.3 Build the workshop selection screen (lists workshops currently in progress or starting soon)
-- [ ] 8.4 Implement `GET /checkin/preload/:workshopId` (CHECKIN_STAFF/ADMIN): return the roster (registrationId, studentId, qr_token_hash) and HMAC secret for the selected workshop
-- [ ] 8.5 Implement saving the roster and HMAC secret to IndexedDB using the `idb` library
-- [ ] 8.6 Build the QR scanner screen using the `html5-qrcode` library with camera access
-- [ ] 8.7 Implement offline QR verification: decode QR payload, verify HMAC-SHA256 using the secret from IndexedDB, check expiresAt, look up registrationId in roster
-- [ ] 8.8 Implement writing check-in events to IndexedDB: UUID event_id, scanned_at timestamp, status PENDING_SYNC or NEEDS_REVIEW
-- [ ] 8.9 Implement background sync: detect network connectivity, send `POST /checkin/sync` with all pending events
-- [ ] 8.10 Implement `POST /checkin/sync` (CHECKIN_STAFF): upsert check-in events by event_id, return ACCEPTED / DUPLICATE / REJECTED per event
-- [ ] 8.11 Implement duplicate resolution on the server: accept the event with the earliest scanned_at, mark later events as DUPLICATE
-- [ ] 8.12 Write tests: offline scan + sync flow, duplicate scan from two devices, expired QR rejection, NEEDS_REVIEW sync
+- [x] 8.1 Configure PWA manifest and service worker in `apps/checkin-pwa` using vite-plugin-pwa
+- [x] 8.2 Build the CHECKIN_STAFF login screen (reuse auth flow from shared package)
+- [x] 8.3 Build the workshop selection screen (lists workshops currently in progress or starting soon)
+- [x] 8.4 Implement `GET /checkin/preload/:workshopId` (CHECKIN_STAFF/ADMIN): return the roster (registrationId, studentId, qr_token_hash) and HMAC secret for the selected workshop
+- [x] 8.5 Implement saving the roster and HMAC secret to IndexedDB using the `idb` library
+- [x] 8.6 Build the QR scanner screen using the `html5-qrcode` library with camera access
+- [x] 8.7 Implement offline QR verification: decode QR payload, verify HMAC-SHA256 using the secret from IndexedDB, check expiresAt, look up registrationId in roster
+- [x] 8.8 Implement writing check-in events to IndexedDB: UUID event_id, scanned_at timestamp, status PENDING_SYNC or NEEDS_REVIEW
+- [x] 8.9 Implement background sync: detect network connectivity, send `POST /checkin/sync` with all pending events
+- [x] 8.10 Implement `POST /checkin/sync` (CHECKIN_STAFF): upsert check-in events by event_id, return ACCEPTED / DUPLICATE / REJECTED per event
+- [x] 8.11 Implement duplicate resolution on the server: accept the event with the earliest scanned_at, mark later events as DUPLICATE
+- [x] 8.12 Write tests: offline scan + sync flow, duplicate scan from two devices, expired QR rejection, NEEDS_REVIEW sync
 
 ## 9. Student Import Module [Person A — Week 4–5]
 

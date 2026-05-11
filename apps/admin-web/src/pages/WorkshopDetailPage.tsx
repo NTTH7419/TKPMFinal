@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { api, Workshop, WorkshopStats } from '../api/client';
 
+// Convert ISO UTC string → "yyyy-MM-ddThh:mm" for datetime-local input
+function toDatetimeLocal(iso?: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string; onBack: () => void }) {
   const isNew = workshopId === '__new__';
   const [workshop, setWorkshop] = useState<Partial<Workshop>>({
@@ -41,15 +49,32 @@ export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string;
     finally { setSaving(false); }
   };
 
-  const field = (label: string, key: keyof Workshop, type = 'text') => (
-    <div style={s.field} key={key}>
-      <label style={s.label}>{label}</label>
-      <input
-        style={s.input} type={type} value={(workshop[key] as string) ?? ''}
-        onChange={e => setWorkshop(p => ({ ...p, [key]: type === 'number' ? Number(e.target.value) : e.target.value }))}
-      />
-    </div>
-  );
+  const field = (label: string, key: keyof Workshop, type = 'text') => {
+    const raw = workshop[key] as string | undefined;
+    const displayValue = type === 'datetime-local' ? toDatetimeLocal(raw) : (raw ?? '');
+    return (
+      <div style={s.field} key={key}>
+        <label style={s.label}>{label}</label>
+        <input
+          style={s.input}
+          type={type}
+          value={displayValue}
+          onChange={e => {
+            let val: string | number = e.target.value;
+            if (type === 'number') {
+              val = Number(val);
+            } else if (type === 'datetime-local' && e.target.value) {
+              const [datePart, timePart] = e.target.value.split('T');
+              const [y, mo, d] = datePart.split('-').map(Number);
+              const [h, mi] = timePart.split(':').map(Number);
+              val = new Date(y, mo - 1, d, h, mi).toISOString();
+            }
+            setWorkshop(p => ({ ...p, [key]: val }));
+          }}
+        />
+      </div>
+    );
+  };
 
   if (loading) return <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8' }}>Đang tải...</div>;
 
