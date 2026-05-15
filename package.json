@@ -2,15 +2,16 @@
   "name": "unihub-workshop",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@10.24.0",
   "scripts": {
-    "dev": "pnpm --parallel --filter './apps/*' run dev",
+    "dev": "turbo run dev",
     "dev:api": "pnpm --filter api run start:dev",
     "dev:student": "pnpm --filter student-web run dev",
     "dev:admin": "pnpm --filter admin-web run dev",
     "dev:checkin": "pnpm --filter checkin-pwa run dev",
-    "build": "pnpm --filter './packages/*' run build && pnpm --filter './apps/*' run build",
-    "lint": "pnpm --recursive run lint",
-    "test": "pnpm --recursive run test",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
     "db:migrate": "pnpm --filter api run db:migrate",
     "db:seed": "pnpm --filter api run db:seed",
     "infra:up": "docker-compose up -d",
@@ -21,6 +22,7 @@
     "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
+    "turbo": "^2.9.14",
     "typescript": "^5.4.5"
   },
   "engines": {

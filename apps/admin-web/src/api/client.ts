@@ -24,7 +24,7 @@ export interface Workshop {
   id: string; title: string; speakerName: string; roomName: string;
   capacity: number; confirmedCount: number; heldCount: number;
   feeType: string; price?: number; startsAt: string; endsAt: string;
-  status: string; summaryStatus: string; aiSummary?: string;
+  status: string; summaryStatus: string; aiSummary?: string; roomMapUrl?: string;
 }
 
 export interface WorkshopStats {
