@@ -128,19 +128,19 @@
 
 ## 10. AI Summary Module [Person B — Week 5–6]
 
-- [ ] 10.1 Create `AiSummaryModule` in NestJS with a BullMQ queue named `ai-summary`
-- [ ] 10.2 Implement `POST /admin/workshops/:id/documents` (ORGANIZER/ADMIN): validate PDF MIME type and file size ≤ 20 MB, upload to Supabase Storage, create workshop_document record with upload_status=UPLOADED; **if an existing AI processing job is active, cancel it before publishing the new one**; publish `AI_SUMMARY_REQUESTED` job
-- [ ] 10.3 Implement `GET /admin/workshops/:id/summary-status` (ORGANIZER/ADMIN): return current summary_status and ai_summary text
-- [ ] 10.4 Implement Filter 1 — Extract text: use `pdf-parse` to extract raw text from the PDF in Storage
-- [ ] 10.5 Implement Filter 2 — Clean text: strip repeated headers/footers, normalize whitespace, remove extraneous special characters
-- [ ] 10.6 Implement Filter 3 — Chunk: split cleaned text into chunks ≤ 3,000 tokens using `tiktoken` or a character-based estimate
-- [ ] 10.7 Implement Filter 4 — Call AI: send chunks to Gemini API (or OpenAI), collect the summary response, enforce a 30-second timeout
-- [ ] 10.8 Implement Filter 5 — Validate output: ensure the summary is non-empty and within a reasonable length range
-- [ ] 10.9 Implement save and auto-publish: write ai_summary to the `workshops` record and set summary_status=AI_GENERATED
-- [ ] 10.10 Implement retry logic: BullMQ retries up to 3 times with exponential backoff; after exhaustion, set summary_status=SUMMARY_FAILED with error_reason
-- [ ] 10.11 Build Admin Web UI: PDF upload button, summary_status indicator, summary display/edit form
-- [ ] 10.12 Write tests: successful pipeline run, AI timeout triggers retry, file > 20 MB rejected, SUMMARY_FAILED does not affect workshop availability
-- [ ] 10.13 Implement `PATCH /admin/workshops/:id/summary` (ORGANIZER/ADMIN): allow manual editing of `ai_summary` text; set `summary_status = ADMIN_EDITED`; only allowed when current status is `AI_GENERATED` or `ADMIN_EDITED`
+- [x] 10.1 Create `AiSummaryModule` in NestJS with a BullMQ queue named `ai-summary`
+- [x] 10.2 Implement `POST /admin/workshops/:id/documents` (ORGANIZER/ADMIN): validate PDF MIME type and file size ≤ 20 MB, upload to Supabase Storage, create workshop_document record with upload_status=UPLOADED; **if an existing AI processing job is active, cancel it before publishing the new one**; publish `AI_SUMMARY_REQUESTED` job
+- [x] 10.3 Implement `GET /admin/workshops/:id/summary-status` (ORGANIZER/ADMIN): return current summary_status and ai_summary text
+- [x] 10.4 Implement Filter 1 — Extract text: use `pdf-parse` to extract raw text from the PDF in Storage
+- [x] 10.5 Implement Filter 2 — Clean text: strip repeated headers/footers, normalize whitespace, remove extraneous special characters
+- [x] 10.6 Implement Filter 3 — Chunk: split cleaned text into chunks ≤ 3,000 tokens using `tiktoken` or a character-based estimate
+- [x] 10.7 Implement Filter 4 — Call AI: send chunks to Gemini API (or OpenAI), collect the summary response, enforce a 30-second timeout
+- [x] 10.8 Implement Filter 5 — Validate output: ensure the summary is non-empty and within a reasonable length range
+- [x] 10.9 Implement save and auto-publish: write ai_summary to the `workshops` record and set summary_status=AI_GENERATED
+- [x] 10.10 Implement retry logic: BullMQ retries up to 3 times with exponential backoff; after exhaustion, set summary_status=SUMMARY_FAILED with error_reason
+- [x] 10.11 Build Admin Web UI: PDF upload button, summary_status indicator, summary display/edit form
+- [x] 10.12 Write tests: successful pipeline run, AI timeout triggers retry, file > 20 MB rejected, SUMMARY_FAILED does not affect workshop availability
+- [x] 10.13 Implement `PATCH /admin/workshops/:id/summary` (ORGANIZER/ADMIN): allow manual editing of `ai_summary` text; set `summary_status = ADMIN_EDITED`; only allowed when current status is `AI_GENERATED` or `ADMIN_EDITED`
 
 ## 11. Hardening & Integration Tests [All — Week 6–7]
 

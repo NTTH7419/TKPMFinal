@@ -32,6 +32,15 @@ export interface WorkshopStats {
   pendingPaymentCount: number; checkinCount: number; utilizationPct: number;
 }
 
+export interface SummaryStatus {
+  summaryStatus: string;
+  aiSummary?: string;
+  latestDocument?: {
+    id: string; originalFilename: string; uploadStatus: string;
+    errorReason?: string; createdAt: string;
+  };
+}
+
 export interface ImportBatch {
   id: string; filePath: string; status: string;
   totalRows: number; validRows: number; errorRows: number;
@@ -71,6 +80,33 @@ export const api = {
 
   getStats: (id: string) =>
     apiFetch<WorkshopStats>(`/admin/workshops/${id}/stats`),
+
+  getSummaryStatus: (workshopId: string) =>
+    apiFetch<SummaryStatus>(`/admin/workshops/${workshopId}/summary-status`),
+
+  uploadDocument: (workshopId: string, file: File) => {
+    const token = getToken();
+    const form = new FormData();
+    form.append('file', file);
+    return fetch(`${API_BASE}/admin/workshops/${workshopId}/documents`, {
+      method: 'POST',
+      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: form,
+      credentials: 'include',
+    }).then(async res => {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(err.message || 'Upload failed');
+      }
+      return res.json() as Promise<{ documentId: string; status: string }>;
+    });
+  },
+
+  updateSummary: (workshopId: string, aiSummary: string) =>
+    apiFetch<{ id: string; summaryStatus: string; aiSummary: string }>(
+      `/admin/workshops/${workshopId}/summary`,
+      { method: 'PATCH', body: JSON.stringify({ aiSummary }) },
+    ),
 
   getImportBatches: (page = 1) =>
     apiFetch<{ data: ImportBatch[]; total: number; page: number; limit: number }>(

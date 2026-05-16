@@ -14,6 +14,7 @@ import { PaymentModule } from './payment/payment.module';
 import { NotificationModule } from './notification/notification.module';
 import { CheckinModule } from './checkin/checkin.module';
 import { StudentImportModule } from './student-import/student-import.module';
+import { AiSummaryModule } from './ai-summary/ai-summary.module';
 import { RateLimitGuard } from './load-protection/rate-limit.guard';
 
 @Module({
@@ -50,6 +51,7 @@ import { RateLimitGuard } from './load-protection/rate-limit.guard';
     NotificationModule,
     CheckinModule,
     StudentImportModule,
+    AiSummaryModule,
   ],
   providers: [
     // RateLimitGuard is applied globally; routes without @RateLimit() are skipped automatically
