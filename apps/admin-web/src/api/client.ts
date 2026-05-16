@@ -32,6 +32,20 @@ export interface WorkshopStats {
   pendingPaymentCount: number; checkinCount: number; utilizationPct: number;
 }
 
+export interface ImportBatch {
+  id: string; filePath: string; status: string;
+  totalRows: number; validRows: number; errorRows: number;
+  startedAt?: string; completedAt?: string; createdAt: string;
+}
+
+export interface ImportBatchDetail extends ImportBatch {
+  rows: {
+    id: string; rowNumber: number; studentCode: string;
+    email: string; fullName: string; faculty: string;
+    rowStatus: string; errorMessage?: string;
+  }[];
+}
+
 export const api = {
   login: (email: string, password: string) =>
     apiFetch<{ accessToken: string; user: { id: string; email: string; fullName: string; roles: string[] } }>(
@@ -57,4 +71,12 @@ export const api = {
 
   getStats: (id: string) =>
     apiFetch<WorkshopStats>(`/admin/workshops/${id}/stats`),
+
+  getImportBatches: (page = 1) =>
+    apiFetch<{ data: ImportBatch[]; total: number; page: number; limit: number }>(
+      `/admin/imports/students?page=${page}`
+    ),
+
+  getImportBatchDetail: (batchId: string) =>
+    apiFetch<ImportBatchDetail>(`/admin/imports/students/${batchId}`),
 };

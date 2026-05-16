@@ -114,17 +114,17 @@
 
 ## 9. Student Import Module [Person A — Week 4–5]
 
-- [ ] 9.1 Create `StudentImportModule` in NestJS with a BullMQ queue named `student-import`
-- [ ] 9.2 Implement the cron scheduler (`@Cron`, 2:00 AM nightly): list files in the Supabase Storage `student-imports` bucket, compute SHA-256 checksum, skip files already in `student_import_batches`
-- [ ] 9.3 Implement the parse stage: read CSV from Storage, validate headers (required: `student_code, email, full_name, faculty`), parse each row into `student_import_rows`; per-row validation includes: required field presence, **email format** (RFC 5322 regex), **student code format** (non-empty alphanumeric), and within-batch duplicate `student_code` detection
-- [ ] 9.4 Implement the validate stage: check required fields, detect duplicate student_codes within the batch, assign row_status = VALID / ERROR / DUPLICATE
-- [ ] 9.5 Implement the threshold check: if error_rows / total_rows > error_threshold_pct (20%) → batch transitions to REJECTED, processing stops
-- [ ] 9.6 Implement atomic promotion: a single transaction upserts valid rows into `students` (ON CONFLICT student_code DO UPDATE) and marks absent student_codes as INACTIVE
-- [ ] 9.7 Implement batch report update: set total_rows, valid_rows, error_rows, status=PROMOTED/REJECTED, and completed_at on the batch record
-- [ ] 9.8 Implement `GET /admin/imports/students` (ORGANIZER/ADMIN): paginated list of import batches
-- [ ] 9.9 Implement `GET /admin/imports/students/:batchId` (ORGANIZER/ADMIN): full batch detail with error row list
-- [ ] 9.10 Build Admin Web UI: import history page, batch report view, error row download
-- [ ] 9.11 Write tests: malformed CSV rejects without changing students table, atomic rollback on worker crash, duplicate file is skipped by checksum
+- [x] 9.1 Create `StudentImportModule` in NestJS with a BullMQ queue named `student-import`
+- [x] 9.2 Implement the cron scheduler (`@Cron`, 2:00 AM nightly): list files in the Supabase Storage `student-imports` bucket, compute SHA-256 checksum, skip files already in `student_import_batches`
+- [x] 9.3 Implement the parse stage: read CSV from Storage, validate headers (required: `student_code, email, full_name, faculty`), parse each row into `student_import_rows`; per-row validation includes: required field presence, **email format** (RFC 5322 regex), **student code format** (non-empty alphanumeric), and within-batch duplicate `student_code` detection
+- [x] 9.4 Implement the validate stage: check required fields, detect duplicate student_codes within the batch, assign row_status = VALID / ERROR / DUPLICATE
+- [x] 9.5 Implement the threshold check: if error_rows / total_rows > error_threshold_pct (20%) → batch transitions to REJECTED, processing stops
+- [x] 9.6 Implement atomic promotion: a single transaction upserts valid rows into `students` (ON CONFLICT student_code DO UPDATE) and marks absent student_codes as INACTIVE
+- [x] 9.7 Implement batch report update: set total_rows, valid_rows, error_rows, status=PROMOTED/REJECTED, and completed_at on the batch record
+- [x] 9.8 Implement `GET /admin/imports/students` (ORGANIZER/ADMIN): paginated list of import batches
+- [x] 9.9 Implement `GET /admin/imports/students/:batchId` (ORGANIZER/ADMIN): full batch detail with error row list
+- [x] 9.10 Build Admin Web UI: import history page, batch report view, error row download
+- [x] 9.11 Write tests: malformed CSV rejects without changing students table, atomic rollback on worker crash, duplicate file is skipped by checksum
 
 ## 10. AI Summary Module [Person B — Week 5–6]
 
