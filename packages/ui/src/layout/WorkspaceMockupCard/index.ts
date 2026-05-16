@@ -1,0 +1,1 @@
+export { WorkspaceMockupCard } from './WorkspaceMockupCard';

@@ -107,6 +107,7 @@ describe('AiSummaryService', () => {
       expect(queue.add).toHaveBeenCalledWith(
         'AI_SUMMARY_REQUESTED',
         expect.objectContaining({ workshopId: WORKSHOP_ID, documentId: DOC_ID }),
+        expect.any(Object),
       );
       expect(result.status).toBe('UPLOADED');
     });

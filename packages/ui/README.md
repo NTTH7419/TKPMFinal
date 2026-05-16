@@ -39,6 +39,7 @@ Design-token foundation for the UniHub monorepo. Every color, typeface step, spa
 | `@unihub/ui/fonts.css` | Font loading + `--font-sans` variable |
 | `@unihub/ui/utilities.css` | `.focus-ring` utility for keyboard focus rings |
 | `@unihub/ui/components` | Primitive React components (see below) |
+| `@unihub/ui/layout` | Composite layout & signature components (see below) |
 
 ## Components
 
@@ -67,11 +68,52 @@ import '@unihub/ui/utilities.css';
 
 Run the dev preview (`pnpm --filter @unihub/ui dev`) and switch to the **Components** tab for the full variant matrix.
 
+## Layout
+
+Large composite layout & signature components from `@unihub/ui/layout`. Components are slot-based — they own structure, padding, background, and shadow, and expose named React-node props as slots.
+
+> **`HeroBandDark` default decoration is a placeholder.** The built-in `<HeroDots />` SVG is intentionally generic so page adoption works on day one. Replace it with app-specific brand art via the `decoration` prop in Change 4a/4b/4c.
+
+### Usage
+
+```tsx
+import { HeroBandDark, WorkspaceMockupCard, PricingCard, FooterRegion, FooterLink } from '@unihub/ui/layout';
+import { Button, Badge } from '@unihub/ui/components';
+
+<HeroBandDark
+  eyebrow={<Badge variant="purple">Beta</Badge>}
+  headline="Meet the night shift."
+  subtitle="The AI that never sleeps."
+  primaryCta={<Button variant="primary">Get UniHub free</Button>}
+  secondaryCta={<Button variant="secondary-on-dark">Request a demo</Button>}
+>
+  <WorkspaceMockupCard>{/* product illustration */}</WorkspaceMockupCard>
+</HeroBandDark>
+```
+
+### Component reference
+
+| Component | Element | Key tokens | Slots / props |
+|-----------|---------|-----------|---------------|
+| `HeroBandDark` | `<section>` | `bg-brand-navy text-on-dark p-hero` | `eyebrow?` `headline` `subtitle?` `primaryCta?` `secondaryCta?` `decoration?` `children` |
+| `WorkspaceMockupCard` | `<div>` | `bg-canvas rounded-lg border-hairline shadow-mockup` | `children` (no padding) |
+| `PricingCard` | `<div>` | `bg-canvas`/`bg-surface` · `rounded-lg p-xxl` | `tierName` `price` `description?` `featureList` `cta?` `popularBadge?` `featured?` |
+| `ComparisonTable` | `<table>` | `bg-canvas rounded-md border-hairline text-body-sm` | semantic `<thead>`/`<tbody>` children |
+| `ComparisonRow` | `<tr>` | `border-b border-hairline-soft` | `<th>` / `<td>` children |
+| `FaqAccordionItem` | `<details>` | `bg-canvas rounded-md p-xl border-b border-hairline` | `question` `children` `defaultOpen?` `onToggle?` |
+| `StatRow` | `<section>` | `bg-surface rounded-lg p-section-sm text-ink` | `children` |
+| `TestimonialCard` | `<div>` | `bg-canvas rounded-lg p-xxl border-hairline` | `children` |
+| `LogoWallItem` | `<div>` | `bg-transparent text-steel text-body-md-medium p-lg` | `children` |
+| `CtaBannerLight` | `<div>` | `bg-surface text-ink rounded-lg p-section` | `children` |
+| `PromoBanner` | `<div>` | `bg-surface text-ink text-body-sm-medium py-sm px-md` | `children` |
+| `FooterRegion` | `<footer>` | `bg-canvas border-t border-hairline py-section px-xxl` | column `<div>` children |
+| `FooterLink` | `<a>` | `text-steel text-body-sm py-xxs px-0` | `href` + anchor props |
+
 ## Running the dev preview
 
 ```bash
 pnpm --filter @unihub/ui dev
-# Opens at http://localhost:6006 — Tokens / Components tabs
+# Opens at http://localhost:6006 — Tokens / Components / Layout tabs
 ```
 
 ## Rebuilding after token changes

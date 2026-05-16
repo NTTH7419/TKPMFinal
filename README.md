@@ -145,10 +145,13 @@ Thiết kế giao diện tuân theo [`DESIGN.md`](DESIGN.md) — mọi token mà
 | `@unihub/ui/fonts.css` | Font Inter Variable + biến `--font-sans` |
 | `@unihub/ui/tokens` | TS object + type exports (`ColorToken`, v.v.) |
 | `@unihub/ui/components` | Primitive React components (Button, Card, Input, Badge, Tabs) — see the **Components** tab in the preview |
+| `@unihub/ui/layout` | Composite layout & signature components (HeroBandDark, PricingCard, FooterRegion, etc.) — see the **Layout** tab in the preview |
 | `@unihub/ui/utilities.css` | `focus-ring` utility consumed by every interactive primitive |
 
+The **Layout** tab (available at `http://localhost:6006` after running the dev server) renders every composite layout component — HeroBandDark, PricingCard, ComparisonTable, FaqAccordionItem, StatRow, TestimonialCard, LogoWallItem, CtaBannerLight, PromoBanner, FooterRegion — with realistic placeholder content for designer sign-off against `DESIGN.md`.
+
 ```bash
-# Xem preview toàn bộ tokens & components (Tokens / Components tabs)
+# Xem preview toàn bộ tokens, components & layout (Tokens / Components / Layout tabs)
 pnpm --filter @unihub/ui dev
 # → http://localhost:6006
 

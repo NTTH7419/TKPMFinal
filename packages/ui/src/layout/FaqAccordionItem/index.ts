@@ -1,0 +1,1 @@
+export { FaqAccordionItem } from './FaqAccordionItem';

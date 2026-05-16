@@ -2,8 +2,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PaymentService } from './payment.service';
 import { CircuitBreakerService } from './circuit-breaker.service';
-import { MockPaymentAdapter } from './mock-payment.adapter';
+import { REDIS_CLIENT } from '../redis/redis.module';
 import { PrismaService } from '../prisma/prisma.service';
+
+const mockRedis = {
+  get: jest.fn(),
+  set: jest.fn(),
+  setex: jest.fn(),
+  incr: jest.fn(),
+  del: jest.fn(),
+  expire: jest.fn(),
+};
 
 describe('PaymentService (6.11)', () => {
   let service: PaymentService;
@@ -43,6 +52,7 @@ describe('PaymentService (6.11)', () => {
         },
         { provide: PrismaService, useValue: mockPrisma },
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
+        { provide: REDIS_CLIENT, useValue: mockRedis },
       ],
     }).compile();
 

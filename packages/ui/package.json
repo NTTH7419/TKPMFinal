@@ -22,6 +22,11 @@
       "import": "./dist/components/index.js",
       "require": "./dist/components/index.cjs"
     },
+    "./layout": {
+      "types": "./dist/layout/index.d.ts",
+      "import": "./dist/layout/index.js",
+      "require": "./dist/layout/index.cjs"
+    },
     "./tokens.css": "./src/styles/tokens.css",
     "./fonts.css": "./src/styles/fonts.css",
     "./utilities.css": "./src/styles/utilities.css"

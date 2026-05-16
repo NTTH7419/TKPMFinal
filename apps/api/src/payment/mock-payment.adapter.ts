@@ -12,9 +12,9 @@ export class MockPaymentAdapter implements PaymentAdapter {
   ) {}
 
   async createIntent(
-    registrationId: string,
-    amount: number,
-    idempotencyKey: string,
+    _registrationId: string,
+    _amount: number,
+    _idempotencyKey: string,
   ): Promise<{
     paymentIntentId: string;
     paymentUrl: string;
@@ -36,9 +36,9 @@ export class MockPaymentAdapter implements PaymentAdapter {
   }
 
   async refund(
-    paymentIntentId: string,
-    amount: number,
-    idempotencyKey: string,
+    _paymentIntentId: string,
+    _amount: number,
+    _idempotencyKey: string,
   ): Promise<{
     refundId: string;
     status: string;

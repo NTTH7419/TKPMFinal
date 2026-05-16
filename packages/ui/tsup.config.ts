@@ -5,6 +5,7 @@ export default defineConfig({
     'tailwind-preset': 'src/tailwind-preset.ts',
     'tokens/index': 'src/tokens/index.ts',
     'components/index': 'src/components/index.ts',
+    'layout/index': 'src/layout/index.ts',
   },
   format: ['cjs', 'esm'],
   dts: true,

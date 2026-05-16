@@ -76,16 +76,8 @@ export class CircuitBreakerService {
   }
 
   async recordFailure(): Promise<void> {
-    const state = await this.getState();
+    await this.getState();
     const now = Date.now();
-
-    // Check failure rate in 30s window
-    const failureTimestampValue = await this.redis.get(
-      this.failureTimestampKey,
-    );
-    const lastFailureAt = failureTimestampValue
-      ? parseInt(failureTimestampValue, 10)
-      : now;
 
     // Track failures within the 30s window
     const failureCountValue = await this.redis.incr(

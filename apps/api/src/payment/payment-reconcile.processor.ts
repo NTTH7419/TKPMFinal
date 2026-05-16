@@ -19,8 +19,6 @@ export class PaymentReconcileProcessor {
     this.logger.log('Starting payment reconciliation...');
 
     try {
-      const now = new Date();
-
       // Query registrations that are PENDING_PAYMENT with hold_expires_at > 30 minutes old
       // AND no corresponding payment with status SUCCEEDED
       const staleRegistrations = await this.prisma.$queryRaw<

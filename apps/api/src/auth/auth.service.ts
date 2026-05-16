@@ -53,7 +53,7 @@ export class AuthService {
     }
 
     const roles = user.userRoles.map((ur) => ur.role.code);
-    const { accessToken, refreshToken, jti } = await this.generateTokenPair(user.id, roles);
+    const { accessToken, refreshToken } = await this.generateTokenPair(user.id, roles);
 
     // Set refresh token as HTTP-only cookie
     res.cookie('refresh_token', refreshToken, {

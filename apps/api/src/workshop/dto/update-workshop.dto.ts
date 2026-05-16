@@ -1,6 +1,6 @@
 import {
   IsString, IsInt, IsPositive, IsEnum,
-  IsOptional, IsNumber, IsDateString, Min, ValidateIf,
+  IsOptional, IsNumber, IsDateString, Min,
 } from 'class-validator';
 import { WorkshopFeeType } from '@unihub/shared';
 

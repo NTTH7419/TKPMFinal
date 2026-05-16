@@ -5,6 +5,9 @@ import { WorkshopService } from '../workshop/workshop.service';
 import { QueueTokenService } from '../load-protection/queue-token.service';
 import { getQueueToken } from '@nestjs/bullmq';
 import { ConflictException, ForbiddenException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+
+const mockEventEmitter = { emit: jest.fn(), emitAsync: jest.fn() };
 
 const mockQueueTokenService = {
   consumeToken: jest.fn().mockResolvedValue(undefined),
@@ -65,6 +68,7 @@ describe('RegistrationService', () => {
         { provide: WorkshopService, useValue: { publishSeatUpdate: jest.fn().mockResolvedValue(undefined) } },
         { provide: QueueTokenService, useValue: mockQueueTokenService },
         { provide: getQueueToken('expire-hold'), useValue: mockQueue },
+        { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     }).compile();
     service = module.get(RegistrationService);
@@ -101,6 +105,7 @@ describe('RegistrationService', () => {
         { provide: WorkshopService, useValue: { publishSeatUpdate: jest.fn().mockResolvedValue(undefined) } },
         { provide: QueueTokenService, useValue: mockQueueTokenService },
         { provide: getQueueToken('expire-hold'), useValue: mockQueue },
+        { provide: EventEmitter2, useValue: mockEventEmitter },
       ],
     }).compile();
     service = module.get(RegistrationService);

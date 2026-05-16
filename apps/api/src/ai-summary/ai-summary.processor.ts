@@ -159,6 +159,7 @@ export class AiSummaryProcessor extends WorkerHost {
 
     return filtered
       .replace(/\s{3,}/g, '  ')           // collapse excessive whitespace
+      // eslint-disable-next-line no-control-regex
       .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // strip control chars only, keep Unicode/Vietnamese
       .replace(/(\n\s*){3,}/g, '\n\n')     // collapse multiple blank lines
       .trim();
