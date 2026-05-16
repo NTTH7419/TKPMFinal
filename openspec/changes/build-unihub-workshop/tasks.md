@@ -144,13 +144,13 @@
 
 ## 11. Hardening & Integration Tests [All — Week 6–7]
 
-- [ ] 11.1 Concurrency test: 100 simultaneous registrations for the last seat → exactly 1 CONFIRMED (Person A)
-- [ ] 11.2 Rate limit test: burst requests on the registration endpoint → 429 with correct Retry-After timing (Person A)
-- [ ] 11.3 Payment timeout test: hold expires, late webhook arrives → auto-refund executed (Person B)
-- [ ] 11.4 Circuit breaker test: 5 failures → Open, 30s → Half-Open, 3 probes → Closed (Person B)
-- [ ] 11.5 Offline check-in E2E: preload → offline scan → sync → verify no duplicates created (Person C)
-- [ ] 11.6 Student import test: malformed CSV file → students table unchanged, atomic rollback on crash (Person A)
-- [ ] 11.7 Notification test: workshop cancelled → all registrants receive both in-app and email notifications (Person C)
-- [ ] 11.8 Review full API surface against requirements: confirm all acceptance criteria are covered by tests
-- [ ] 11.9 Set up GitHub Actions CI: lint + unit tests on push, build validation for all apps
-- [ ] 11.10 Write README with setup instructions, required environment variables, and commands to run each app
+- [x] 11.1 Concurrency test: 100 simultaneous registrations for the last seat → exactly 1 CONFIRMED (Person A)
+- [x] 11.2 Rate limit test: burst requests on the registration endpoint → 429 with correct Retry-After timing (Person A)
+- [x] 11.3 Payment timeout test: hold expires, late webhook arrives → auto-refund executed (Person B)
+- [x] 11.4 Circuit breaker test: 5 failures → Open, 30s → Half-Open, 3 probes → Closed (Person B)
+- [x] 11.5 Offline check-in E2E: preload → offline scan → sync → verify no duplicates created (Person C)
+- [x] 11.6 Student import test: malformed CSV file → students table unchanged, atomic rollback on crash (Person A)
+- [x] 11.7 Notification test: workshop cancelled → all registrants receive both in-app and email notifications (Person C)
+- [x] 11.8 Review full API surface against requirements: confirm all acceptance criteria are covered by tests
+- [x] 11.9 Set up GitHub Actions CI: lint + unit tests on push, build validation for all apps
+- [x] 11.10 Write README with setup instructions, required environment variables, and commands to run each app

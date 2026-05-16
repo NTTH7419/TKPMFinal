@@ -85,7 +85,7 @@ GEMINI_API_KEY=<optional-for-ai-summary>
 # 1. Install dependencies
 pnpm install
 
-# 2. Start local infrastructure
+# 2. Start local infrastructure (Redis)
 docker-compose up -d
 
 # 3. Run database migrations (against Supabase PostgreSQL)
@@ -95,8 +95,30 @@ npx prisma migrate dev
 # 4. Seed initial roles
 npx prisma db seed
 
-# 5. Start dev server
+# 5a. Start all apps together (recommended)
 pnpm run dev
+
+# 5b. Or start each app individually:
+pnpm run dev:api      # NestJS API on http://localhost:3000
+pnpm run dev:student  # Student web on http://localhost:5173
+pnpm run dev:admin    # Admin web on http://localhost:5174
+pnpm run dev:checkin  # Check-in PWA on http://localhost:5175
+```
+
+## Running Tests
+
+```bash
+# Unit tests (API only)
+pnpm --filter api run test
+
+# Unit tests with coverage
+pnpm --filter api run test:cov
+
+# Lint all workspaces
+pnpm run lint
+
+# Build all apps
+pnpm run build
 ```
 
 ## Monorepo Structure
