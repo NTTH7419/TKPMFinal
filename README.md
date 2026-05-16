@@ -144,9 +144,11 @@ Thiết kế giao diện tuân theo [`DESIGN.md`](DESIGN.md) — mọi token mà
 | `@unihub/ui/tokens.css` | CSS variables (`--color-*`, `--space-*`, `--rounded-*`, ...) |
 | `@unihub/ui/fonts.css` | Font Inter Variable + biến `--font-sans` |
 | `@unihub/ui/tokens` | TS object + type exports (`ColorToken`, v.v.) |
+| `@unihub/ui/components` | Primitive React components (Button, Card, Input, Badge, Tabs) — see the **Components** tab in the preview |
+| `@unihub/ui/utilities.css` | `focus-ring` utility consumed by every interactive primitive |
 
 ```bash
-# Xem preview toàn bộ tokens (màu sắc, chữ, spacing, shadow)
+# Xem preview toàn bộ tokens & components (Tokens / Components tabs)
 pnpm --filter @unihub/ui dev
 # → http://localhost:6006
 

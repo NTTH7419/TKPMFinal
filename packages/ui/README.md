@@ -37,12 +37,41 @@ Design-token foundation for the UniHub monorepo. Every color, typeface step, spa
 | `@unihub/ui/tokens` | Raw TS object + TypeScript types (`ColorToken`, etc.) |
 | `@unihub/ui/tokens.css` | CSS variables: `--color-*`, `--space-*`, `--rounded-*`, `--shadow-*`, `--text-*` |
 | `@unihub/ui/fonts.css` | Font loading + `--font-sans` variable |
+| `@unihub/ui/utilities.css` | `.focus-ring` utility for keyboard focus rings |
+| `@unihub/ui/components` | Primitive React components (see below) |
 
-## Running the token preview
+## Components
+
+Primitive React components that consume the token preset. All exports are tree-shakeable named exports off `@unihub/ui/components`. Every interactive primitive uses `:focus-visible` for keyboard focus (no rings on mouse click) via the shared `.focus-ring` utility — consuming apps must `import '@unihub/ui/utilities.css'` once.
+
+| Primitive | Variants / API |
+|---|---|
+| `Button` | `primary` · `dark` · `secondary` · `on-dark` · `secondary-on-dark` · `ghost` · `link`. `disabled`, `href` (renders `<a>`), ref forwards |
+| `Card` | `base` · `feature` · 8 pastel tints (`feature-peach` …) · `agent-tile` · `template` · `startup-perk` · `testimonial` |
+| `TextInput` | Default text input with `:focus-visible` border-swap to primary |
+| `SearchPill` | Surface-tinted pill input |
+| `Badge` | Filled (`purple` · `pink` · `orange` · `popular`) + tag (`tag-purple` · `tag-orange` · `tag-green`) |
+| `PillTabGroup` + `PillTab` | Pill-style top-level tabs; group owns ARIA + roving tabindex |
+| `SegmentedTabGroup` + `SegmentedTab` | Underline tabs; active child gets `aria-current="page"` |
+
+```tsx
+import { Button, Card, Badge } from '@unihub/ui/components';
+import '@unihub/ui/tokens.css';
+import '@unihub/ui/utilities.css';
+
+<Card variant="feature-peach">
+  <Badge variant="popular">Popular</Badge>
+  <Button variant="primary" href="/sign-up">Get started</Button>
+</Card>
+```
+
+Run the dev preview (`pnpm --filter @unihub/ui dev`) and switch to the **Components** tab for the full variant matrix.
+
+## Running the dev preview
 
 ```bash
 pnpm --filter @unihub/ui dev
-# Opens at http://localhost:6006
+# Opens at http://localhost:6006 — Tokens / Components tabs
 ```
 
 ## Rebuilding after token changes
