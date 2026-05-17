@@ -1,0 +1,6 @@
+@import '@fontsource-variable/inter/index.css';
+@import '@fontsource-variable/inter/wght.css';
+
+:root {
+  --font-sans: 'Inter Variable', -apple-system, system-ui, 'Segoe UI', Helvetica, sans-serif;
+}

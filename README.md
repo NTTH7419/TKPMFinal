@@ -130,8 +130,33 @@ apps/
 ├── admin-web/    # React + Vite — organizer/admin UI
 └── checkin-pwa/  # React + Vite + vite-plugin-pwa — offline-first check-in
 packages/
-└── shared/       # DTOs, enums, shared constants
+├── shared/       # DTOs, enums, shared constants
+└── ui/           # Design-token library (Tailwind preset, CSS variables, fonts)
 ```
+
+## Design System (Token System)
+
+Thiết kế giao diện tuân theo [`DESIGN.md`](DESIGN.md) — mọi token màu sắc, typography, spacing đều được code hóa tại [`packages/ui/src/tokens/tokens.ts`](packages/ui/src/tokens/tokens.ts).
+
+| Import | Dùng để |
+|---|---|
+| `@unihub/ui/tailwind-preset` | Tailwind preset cho tất cả 3 frontend app |
+| `@unihub/ui/tokens.css` | CSS variables (`--color-*`, `--space-*`, `--rounded-*`, ...) |
+| `@unihub/ui/fonts.css` | Font Inter Variable + biến `--font-sans` |
+| `@unihub/ui/tokens` | TS object + type exports (`ColorToken`, v.v.) |
+| `@unihub/ui/components` | Primitive React components (Button, Card, Input, Badge, Tabs) — see the **Components** tab in the preview |
+| `@unihub/ui/utilities.css` | `focus-ring` utility consumed by every interactive primitive |
+
+```bash
+# Xem preview toàn bộ tokens & components (Tokens / Components tabs)
+pnpm --filter @unihub/ui dev
+# → http://localhost:6006
+
+# Rebuild sau khi sửa tokens
+pnpm --filter @unihub/ui build
+```
+
+Chi tiết: [`packages/ui/README.md`](packages/ui/README.md)
 
 ## Supabase Setup
 
