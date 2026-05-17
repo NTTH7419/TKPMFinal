@@ -48,37 +48,6 @@ volumes:
 ```bash
 docker-compose up -d
 ```
-
-## Environment Variables
-
-Create `apps/api/.env` (copy from `apps/api/.env.example`):
-
-```env
-# Supabase (PostgreSQL + Storage)
-DATABASE_URL=postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
-SUPABASE_URL=https://[project-ref].supabase.co
-SUPABASE_ANON_KEY=<anon-key>
-
-# Redis (Docker local)
-REDIS_URL=redis://localhost:6379
-
-# Auth — use two separate secrets
-JWT_ACCESS_SECRET=<secret-at-least-32-chars>
-JWT_REFRESH_SECRET=<different-secret-at-least-32-chars>
-
-# HMAC
-HMAC_QR_SECRET=<secret-for-qr-signing>
-HMAC_WEBHOOK_SECRET=<secret-for-webhook-verification>
-
-# Email (Resend)
-RESEND_API_KEY=re_<api-key>
-RESEND_FROM_EMAIL=noreply@yourdomain.com
-
-# AI (optional)
-GEMINI_API_KEY=<optional-for-ai-summary>
-# or: OPENAI_API_KEY=<optional>
-```
-
 ## Getting Started
 
 ```bash
@@ -88,37 +57,19 @@ pnpm install
 # 2. Start local infrastructure (Redis)
 docker-compose up -d
 
-# 3. Run database migrations (against Supabase PostgreSQL)
+# 3. Apply database migrations (uses .env from apps/api/)
 cd apps/api
-npx prisma migrate dev
+npx prisma migrate deploy
 
-# 4. Seed initial roles
-npx prisma db seed
-
-# 5a. Start all apps together (recommended)
+# 4. Start all apps
+cd ../..
 pnpm run dev
 
-# 5b. Or start each app individually:
+# Or start individual apps:
 pnpm run dev:api      # NestJS API on http://localhost:3000
 pnpm run dev:student  # Student web on http://localhost:5173
 pnpm run dev:admin    # Admin web on http://localhost:5174
 pnpm run dev:checkin  # Check-in PWA on http://localhost:5175
-```
-
-## Running Tests
-
-```bash
-# Unit tests (API only)
-pnpm --filter api run test
-
-# Unit tests with coverage
-pnpm --filter api run test:cov
-
-# Lint all workspaces
-pnpm run lint
-
-# Build all apps
-pnpm run build
 ```
 
 ## Monorepo Structure
@@ -134,31 +85,27 @@ packages/
 └── ui/           # Design-token library (Tailwind preset, CSS variables, fonts)
 ```
 
-## Design System (Token System)
+## Demo Accounts (Pre-Seeded)
 
-Thiết kế giao diện tuân theo [`DESIGN.md`](DESIGN.md) — mọi token màu sắc, typography, spacing đều được code hóa tại [`packages/ui/src/tokens/tokens.ts`](packages/ui/src/tokens/tokens.ts).
+Use these accounts to test immediately (no registration needed):
 
-| Import | Dùng để |
-|---|---|
-| `@unihub/ui/tailwind-preset` | Tailwind preset cho tất cả 3 frontend app |
-| `@unihub/ui/tokens.css` | CSS variables (`--color-*`, `--space-*`, `--rounded-*`, ...) |
-| `@unihub/ui/fonts.css` | Font Inter Variable + biến `--font-sans` |
-| `@unihub/ui/tokens` | TS object + type exports (`ColorToken`, v.v.) |
-| `@unihub/ui/components` | Primitive React components (Button, Card, Input, Badge, Tabs) — see the **Components** tab in the preview |
-| `@unihub/ui/utilities.css` | `focus-ring` utility consumed by every interactive primitive |
+**Non-Student Accounts:**
+- **Admin:** `admin@unihub.edu.vn` / `Admin@123456`
+- **Organizer:** `organizer@unihub.edu.vn` / `Organizer@123`
+- **Staff:** `staff@unihub.edu.vn` / `Staff@123`
 
-```bash
-# Xem preview toàn bộ tokens & components (Tokens / Components tabs)
-pnpm --filter @unihub/ui dev
-# → http://localhost:6006
+**Student Accounts (7 linked accounts for testing):**
+- `student1@unihub.edu.vn` / `Student@123` (SE123456 — Nguyễn Văn A)
+- `student2@unihub.edu.vn` / `Student@123` (SE123457 — Trần Thị B)
+- `student3@unihub.edu.vn` / `Student@123` (SE123458 — Lê Văn C)
+- `student4@unihub.edu.vn` / `Student@123` (SE123459 — Phạm Thị D)
+- `student5@unihub.edu.vn` / `Student@123` (SE123460 — Hoàng Văn E)
+- `it000001@student.edu.vn` / `Student@123` (IT000001 — Ngô Thị F)
+- `it000002@student.edu.vn` / `Student@123` (IT000002 — Đinh Văn G)
 
-# Rebuild sau khi sửa tokens
-pnpm --filter @unihub/ui build
-```
+## For Local Development (Creating Your Own Supabase)
 
-Chi tiết: [`packages/ui/README.md`](packages/ui/README.md)
-
-## Supabase Setup
+If you need your own independent testing database, follow these steps:
 
 ### Step 1: Create Supabase Project
 1. Go to [supabase.com](https://supabase.com) and sign up / log in
@@ -192,76 +139,15 @@ Chi tiết: [`packages/ui/README.md`](packages/ui/README.md)
 Run migrations to create all tables:
 ```bash
 cd apps/api
-npx prisma migrate deploy
-```
-
-If this is your **first time**, use:
-```bash
 npx prisma migrate dev
 ```
+
 This will:
 - Create all tables based on `schema.prisma`
 - Run migrations in `prisma/migrations/`
-- Seed demo data automatically (if `prisma.seed` is configured)
+- Seed demo data automatically
 
-### Step 5: Seed Initial Data
-```bash
-pnpm --filter api run db:seed
-```
-
-#### Seed Strategy: Independent Data Only
-
-The seed script follows a **data isolation pattern** — it seeds only **independent entities**. Relational data (registrations, payments, check-in events, notifications) are **NOT seeded** because:
-
-1. **Avoiding data coupling:** Different test scenarios require different relationships
-2. **Clean user testing:** When users register, they create their own registrations without conflicts from pre-seeded data
-3. **Realistic workflow:** Students auto-link to User accounts when they register with matching email (not seeded)
-
-#### What Gets Seeded
-
-**Roles & Non-Student Users:**
-- `STUDENT`, `ORGANIZER`, `CHECKIN_STAFF`, `ADMIN` roles
-- 4 non-student users: admin, organizer, staff (×2)
-  - **Admin:** `admin@unihub.edu.vn` / `Admin@123456`
-  - **Organizer:** `organizer@unihub.edu.vn` / `Organizer@123`
-  - **Staff:** `staff@unihub.edu.vn` / `Staff@123`
-
-**Student Records (Import Batch):**
-- 7 independent Student records with unique emails:
-  - `SE123456` / `student1@unihub.edu.vn` — Nguyễn Văn A
-  - `SE123457` / `student2@unihub.edu.vn` — Trần Thị B
-  - ... (5 more)
-- **Students are NOT linked to User accounts** — they auto-link when they register via email matching
-
-**Workshops:**
-- 7 independent workshops with various states:
-  - 4 OPEN (FREE + PAID)
-  - 1 DRAFT
-  - 1 CLOSED (past event)
-  - 1 CANCELLED
-
-**Student Import Batch:**
-- 1 batch with 9 rows: 7 VALID + 1 ERROR + 1 DUPLICATE (for testing import flow)
-
-#### Test Workflow
-
-To test the full registration flow:
-
-1. **Register as a student** using one of the seeded student emails:
-   ```
-   Email: student1@unihub.edu.vn
-   Password: any password you choose
-   ```
-   This automatically:
-   - Creates a new User account
-   - Links to the seeded Student record (via `auth.service.ts`)
-   - Assigns STUDENT role
-   - Allows registration for workshops
-
-2. **Then test registration flow** (FREE or PAID workshops)
-3. **Admins can check imports** — see the batch with 9 rows including validation errors
-
-### Step 6: Create Storage Buckets
+### Step 5: Create Storage Buckets
 1. Go to **Storage** in Supabase dashboard
 2. Create the following buckets (all **private**):
    - **`workshop-docs`** — PDF uploads by organizers for AI summary
@@ -274,21 +160,55 @@ For each bucket:
 - Toggle **"Private"** (ensure it's private, not public)
 - Click **Create bucket**
 
-### Verify Setup
+### Step 6: Verify Setup
 After migration and seeding, verify everything is correct:
 ```bash
-# Check if all tables exist
+cd apps/api
 npx prisma studio
-
-# This opens interactive UI at http://localhost:5555
-# Browse through: Users, Students, Workshops, Registrations, Payments, etc.
+# Opens http://localhost:5555 — browse Users, Students, Workshops, etc.
 ```
 
-**Demo Accounts to test with:**
-- **Admin:** `admin@unihub.edu.vn` / `Admin@123456`
-- **Organizer:** `organizer@unihub.edu.vn` / `Organizer@123`
-- **Staff:** `staff@unihub.edu.vn` / `Staff@123`
-- **Student:** `student@unihub.edu.vn` / `Student@123` (linked to SE123456)
+### Seed Strategy: Independent Data Only
+
+The seed script follows a **data isolation pattern** — it seeds only **independent entities**. Relational data (registrations, payments, check-in events) are **NOT seeded** because:
+
+1. **Avoiding data coupling:** Different test scenarios require different relationships
+2. **Clean user testing:** When users register, they create their own registrations without conflicts from pre-seeded data
+3. **Multi-user isolation:** Each student sees only their own registrations via JWT auth
+
+#### What Gets Seeded
+
+**Roles & Non-Student Users:**
+- `STUDENT`, `ORGANIZER`, `CHECKIN_STAFF`, `ADMIN` roles
+- 4 non-student users: admin, organizer, staff (×2)
+
+**Student Records (7 Independent):**
+- Each with unique email and student code
+- All linked to User accounts with password `Student@123`
+- Pre-seeded registrations (1 FREE confirmed, 1 PAID pending) for testing
+
+**Workshops (7 Independent):**
+- 4 OPEN (FREE + PAID mixed)
+- 1 DRAFT
+- 1 CLOSED (past event)
+- 1 CANCELLED
+
+**Student Import Batch:**
+- 1 batch with 9 rows: 7 VALID + 1 ERROR + 1 DUPLICATE (for testing import flow)
+
+#### Test Workflow
+
+1. **Login as student1:**
+   ```
+   Email: student1@unihub.edu.vn
+   Password: Student@123
+   ```
+2. **View pre-seeded registrations:**
+   - Navigate to "Đăng ký của tôi" (My Registrations)
+   - Should see 1 FREE workshop confirmed
+3. **Switch accounts** → Login as student2 → See different registrations (1 PAID pending)
+4. **Test registration flow** → Register for a new workshop
+5. **Verify data isolation** → Login as student3 → Should NOT see student1's or student2's registrations
 
 ## Documentation
 
