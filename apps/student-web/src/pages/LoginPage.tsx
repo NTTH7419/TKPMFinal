@@ -5,7 +5,7 @@ import { faGraduationCap, faEnvelope, faLock, faRightToBracket, faSpinner, faTri
 import { api } from '../api/client';
 
 export function LoginPage() {
-  const [email, setEmail] = useState('student@unihub.edu.vn');
+  const [email, setEmail] = useState('student1@unihub.edu.vn');
   const [password, setPassword] = useState('Student@123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
