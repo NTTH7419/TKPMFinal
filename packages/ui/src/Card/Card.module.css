@@ -1,0 +1,13 @@
+.card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.padSm { padding: 16px; }
+.padMd { padding: 24px; }
+.padLg { padding: 32px; }
+
+.shadowSm { box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+.shadowMd { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.shadowLg { box-shadow: 0 4px 20px rgba(0,0,0,0.10); }

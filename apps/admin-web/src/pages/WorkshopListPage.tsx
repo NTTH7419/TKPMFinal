@@ -1,24 +1,46 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api, Workshop } from '../api/client';
+import { Skeleton } from '@unihub/ui';
 
 const statusColor: Record<string, string> = {
   DRAFT: '#f59e0b', OPEN: '#22c55e', CLOSED: '#64748b', CANCELLED: '#ef4444',
 };
 
-export function WorkshopListPage({ onSelect }: { onSelect: (id: string) => void }) {
+export function WorkshopListPage() {
   const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const load = () => api.getWorkshops().then(r => setWorkshops(r.data)).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
 
-  if (loading) return <div style={s.loading}>Đang tải...</div>;
+  if (loading) return (
+    <div>
+      <div style={s.toolbar}>
+        <Skeleton width={200} height={28} />
+        <Skeleton width={100} height={36} borderRadius={8} />
+      </div>
+      <table style={s.table}>
+        <thead><tr style={s.thead}>{['Tên workshop', 'Diễn giả', 'Phòng', 'Sức chứa', 'Đã xác nhận', 'Trạng thái', 'Thao tác'].map(h => <th key={h} style={s.th}>{h}</th>)}</tr></thead>
+        <tbody>
+          {[1, 2, 3, 4].map(i => (
+            <tr key={i} style={s.tr}>
+              {[180, 120, 80, 60, 60, 70, 90].map((w, j) => (
+                <td key={j} style={s.td}><Skeleton width={w} height={14} /></td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <div>
       <div style={s.toolbar}>
         <h2 style={s.title}>Danh sách Workshop</h2>
-        <button style={s.btn} onClick={() => onSelect('__new__')}>+ Tạo mới</button>
+        <button style={s.btn} onClick={() => navigate('/workshops/new')}>+ Tạo mới</button>
       </div>
       <table style={s.table}>
         <thead>
@@ -31,7 +53,7 @@ export function WorkshopListPage({ onSelect }: { onSelect: (id: string) => void 
         <tbody>
           {workshops.map(w => (
             <tr key={w.id} style={s.tr}>
-              <td style={s.td}><button style={s.link} onClick={() => onSelect(w.id)}>{w.title}</button></td>
+              <td style={s.td}><button style={s.link} onClick={() => navigate(`/workshops/${w.id}`)}>{w.title}</button></td>
               <td style={s.td}>{w.speakerName}</td>
               <td style={s.td}>{w.roomName}</td>
               <td style={s.td}>{w.capacity}</td>

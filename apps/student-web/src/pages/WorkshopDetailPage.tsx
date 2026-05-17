@@ -1,37 +1,34 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getWorkshop, WorkshopDetail, api } from '../api/client';
 import { useSeatStream } from '../hooks/useSeatStream';
+import { Skeleton } from '@unihub/ui';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('vi-VN', { dateStyle: 'long', timeStyle: 'short' });
 }
 
-export function WorkshopDetailPage({
-  workshopId,
-  onBack,
-  onPaymentRequired,
-}: {
-  workshopId: string;
-  onBack: () => void;
-  onPaymentRequired?: (registrationId: string) => void;
-}) {
+export function WorkshopDetailPage() {
+  const { id: workshopId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [workshop, setWorkshop] = useState<WorkshopDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
   const [msg, setMsg] = useState('');
-  const { seatData } = useSeatStream(workshopId);
+  const { seatData } = useSeatStream(workshopId ?? null);
 
   useEffect(() => {
+    if (!workshopId) return;
     getWorkshop(workshopId)
       .then(setWorkshop)
       .finally(() => setLoading(false));
   }, [workshopId]);
 
   const handleRegister = async () => {
+    if (!workshopId) return;
     setRegistering(true);
     setMsg('');
     try {
-      // Task 5.5: Get queue token first
       try {
         await api.getQueueToken(workshopId);
       } catch (e) {
@@ -44,11 +41,7 @@ export function WorkshopDetailPage({
         setMsg('✅ Đăng ký thành công!');
       } else if (res.status === 'PENDING_PAYMENT') {
         setMsg('⏳ Vui lòng thanh toán trong 10 phút!');
-        setTimeout(() => {
-          if (onPaymentRequired) {
-            onPaymentRequired(res.id);
-          }
-        }, 500);
+        setTimeout(() => navigate(`/payment/${res.id}`), 500);
       }
     } catch (e: any) {
       setMsg(`❌ ${e.message}`);
@@ -57,7 +50,18 @@ export function WorkshopDetailPage({
     }
   };
 
-  if (loading) return <div style={styles.loading}>Đang tải...</div>;
+  if (loading) return (
+    <div style={styles.page}>
+      <div style={{ marginBottom: 20 }}><Skeleton width={80} height={15} /></div>
+      <div style={{ background: '#fff', borderRadius: 16, padding: 32, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+        <div style={{ marginBottom: 20 }}><Skeleton width="70%" height={28} /></div>
+        {[1,2,3,4,5].map(i => (
+          <div key={i} style={{ marginBottom: 10 }}><Skeleton width="50%" height={15} /></div>
+        ))}
+        <div style={{ marginTop: 24 }}><Skeleton height={48} borderRadius={10} /></div>
+      </div>
+    </div>
+  );
   if (!workshop) return <div style={styles.loading}>Không tìm thấy workshop</div>;
 
   const remaining = seatData
@@ -66,9 +70,9 @@ export function WorkshopDetailPage({
 
   return (
     <div style={styles.page}>
-      <button onClick={onBack} style={styles.back}>← Quay lại</button>
+      <button onClick={() => navigate('/workshops')} style={styles.back}>← Quay lại</button>
 
-      <div style={styles.card}>
+      <div className="detail-card" style={styles.card}>
         <h1 style={styles.title}>{workshop.title}</h1>
         <div style={styles.meta}>
           <div style={styles.metaItem}><span>👤</span> {workshop.speakerName}</div>

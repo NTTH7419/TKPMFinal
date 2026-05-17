@@ -64,6 +64,12 @@ export async function getPendingEvents(workshopId: string): Promise<CheckinEvent
   return all.filter((e) => e.workshopId === workshopId && e.status !== 'SYNCED');
 }
 
+export async function getCheckinCount(workshopId: string): Promise<number> {
+  const db = await getDb();
+  const all: CheckinEventRecord[] = await db.getAll('checkin-events');
+  return all.filter((e) => e.workshopId === workshopId && e.status === 'SYNCED').length;
+}
+
 export async function updateEventSynced(eventId: string, syncResult: string): Promise<void> {
   const db = await getDb();
   const event: CheckinEventRecord | undefined = await db.get('checkin-events', eventId);

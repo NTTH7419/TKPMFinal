@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation, Link } from 'react-router-dom';
 import { WorkshopListPage } from './pages/WorkshopListPage';
 import { WorkshopDetailPage } from './pages/WorkshopDetailPage';
 import { MyRegistrationsPage } from './pages/MyRegistrationsPage';
@@ -6,27 +7,26 @@ import { LoginPage } from './pages/LoginPage';
 import { PaymentCheckoutPage } from './pages/PaymentCheckoutPage';
 import NotificationBell from './components/NotificationBell';
 
-type Tab = 'workshops' | 'my-registrations';
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem('access_token');
+  if (!token) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
 
-export default function App() {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('user');
-    return saved ? JSON.parse(saved) : null;
-  });
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [paymentRegistrationId, setPaymentRegistrationId] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>('workshops');
+function Layout() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const user = (() => {
+    try { return JSON.parse(localStorage.getItem('user') ?? 'null'); } catch { return null; }
+  })();
 
   const logout = () => {
     localStorage.clear();
-    setUser(null);
-    setSelectedId(null);
-    setTab('workshops');
+    navigate('/login', { replace: true });
   };
 
-  if (!user) {
-    return <LoginPage onLogin={setUser} />;
-  }
+  const isWorkshops = location.pathname.startsWith('/workshops');
+  const isMyReg = location.pathname === '/my-registrations';
 
   const navLinkStyle = (active: boolean): React.CSSProperties => ({
     color: active ? '#fff' : '#bfdbfe',
@@ -35,63 +35,52 @@ export default function App() {
     cursor: 'pointer',
     padding: '4px 2px',
     borderBottom: active ? '2px solid #fff' : '2px solid transparent',
-    background: 'none',
-    border: 'none',
-    borderBottomColor: active ? '#fff' : 'transparent',
-    borderBottomWidth: 2,
-    borderBottomStyle: 'solid',
+    textDecoration: 'none',
   });
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'Inter, system-ui, sans-serif' }}>
-      <nav style={{ background: '#3b82f6', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 60 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <span
-            style={{ color: '#fff', fontWeight: 700, fontSize: 20, cursor: 'pointer' }}
-            onClick={() => { setTab('workshops'); setSelectedId(null); }}
-          >
+      <nav className="nav-bar" style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 60, flexWrap: 'wrap', gap: 8 }}>
+        <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <Link className="nav-brand" to="/workshops" style={{ color: '#fff', fontWeight: 700, fontSize: 20, textDecoration: 'none' }}>
             UniHub Student
-          </span>
-          <button
-            style={navLinkStyle(tab === 'workshops' && !selectedId)}
-            onClick={() => { setTab('workshops'); setSelectedId(null); }}
-          >
-            Workshop
-          </button>
-          <button
-            style={navLinkStyle(tab === 'my-registrations')}
-            onClick={() => { setTab('my-registrations'); setSelectedId(null); }}
-          >
-            Đăng ký của tôi
-          </button>
+          </Link>
+          <Link to="/workshops" style={navLinkStyle(isWorkshops)}>Workshop</Link>
+          <Link to="/my-registrations" style={navLinkStyle(isMyReg)}>Đăng ký của tôi</Link>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <NotificationBell />
-          <span style={{ color: '#eff6ff', fontSize: 14 }}>{user.fullName}</span>
-          <button onClick={logout} style={{ background: 'none', border: '1px solid #93c5fd', color: '#fff', padding: '4px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}>Đăng xuất</button>
+          {user && <span style={{ color: '#eff6ff', fontSize: 14 }}>{user.fullName}</span>}
+          <button onClick={logout} style={{ background: 'none', border: '1px solid #93c5fd', color: '#fff', padding: '4px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}>
+            Đăng xuất
+          </button>
         </div>
       </nav>
-      <div style={{ padding: '28px 32px', maxWidth: 1000, margin: '0 auto' }}>
-        {paymentRegistrationId ? (
-          <PaymentCheckoutPage
-            registrationId={paymentRegistrationId}
-            onSuccess={() => {
-              setPaymentRegistrationId(null);
-              setTab('my-registrations');
-            }}
-          />
-        ) : selectedId ? (
-          <WorkshopDetailPage
-            workshopId={selectedId}
-            onBack={() => setSelectedId(null)}
-            onPaymentRequired={setPaymentRegistrationId}
-          />
-        ) : tab === 'my-registrations' ? (
-          <MyRegistrationsPage />
-        ) : (
-          <WorkshopListPage onSelect={setSelectedId} />
-        )}
+      <div className="layout-content" style={{ maxWidth: 1000, margin: '0 auto' }}>
+        <Routes>
+          <Route path="/workshops" element={<WorkshopListPage />} />
+          <Route path="/workshops/:id" element={<WorkshopDetailPage />} />
+          <Route path="/my-registrations" element={<MyRegistrationsPage />} />
+          <Route path="/payment/:registrationId" element={<PaymentCheckoutPage />} />
+          <Route path="*" element={<Navigate to="/workshops" replace />} />
+        </Routes>
       </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/*"
+        element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   );
 }

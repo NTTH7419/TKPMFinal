@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import type { AuthState } from '../App';
+import OfflineIndicator from '../components/OfflineIndicator';
 import {
   getRoster,
   saveCheckinEvent,
@@ -122,12 +123,23 @@ export default function ScanPage({ auth, onLogout }: Props) {
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [feedbackKind, setFeedbackKind] = useState<'idle' | 'success' | 'error'>('idle');
+  const feedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const rosterRef = useRef<RosterRecord | null>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const scanCooldown = useRef(false);
 
   const deviceId = getOrCreateDeviceId();
+
+  function triggerFeedback(kind: 'success' | 'error') {
+    setFeedbackKind(kind);
+    if (navigator.vibrate) {
+      navigator.vibrate(kind === 'success' ? 200 : [100, 50, 100]);
+    }
+    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
+    feedbackTimer.current = setTimeout(() => setFeedbackKind('idle'), 2000);
+  }
 
   // Load roster from IndexedDB on mount
   useEffect(() => {
@@ -159,18 +171,21 @@ export default function ScanPage({ auth, onLogout }: Props) {
       if (!qr.registrationId || !qr.workshopId || !qr.hash || !qr.expiresAt) throw new Error('bad');
     } catch {
       setScanResult({ status: 'INVALID', message: 'QR code không hợp lệ' });
+      triggerFeedback('error');
       return;
     }
 
     // Verify workshop matches
     if (qr.workshopId !== workshopId) {
       setScanResult({ status: 'INVALID', message: 'QR thuộc workshop khác' });
+      triggerFeedback('error');
       return;
     }
 
     // Check expiry
     if (new Date(qr.expiresAt).getTime() < Date.now()) {
       setScanResult({ status: 'EXPIRED', message: 'QR code đã hết hạn' });
+      triggerFeedback('error');
       return;
     }
 
@@ -218,7 +233,11 @@ export default function ScanPage({ auth, onLogout }: Props) {
       PENDING_SYNC: { status: 'ACCEPTED', message: '✓ Check-in thành công (chờ đồng bộ)' },
       NEEDS_REVIEW: { status: 'NEEDS_REVIEW', message: '⚠ Cần xem xét (danh sách có thể lỗi thời)' },
     };
-    setScanResult(resultMap[eventStatus] ?? { status: 'INVALID', message: 'Lỗi không xác định' });
+    const result = resultMap[eventStatus] ?? { status: 'INVALID', message: 'Lỗi không xác định' };
+    setScanResult(result);
+
+    // Visual + haptic feedback
+    triggerFeedback(result.status === 'ACCEPTED' ? 'success' : 'error');
 
     // Auto-sync if online
     if (navigator.onLine && auth?.token) {
@@ -288,26 +307,47 @@ export default function ScanPage({ auth, onLogout }: Props) {
     DUPLICATE: '#ff8c00',
   };
 
+  const feedbackOverlay: Record<string, { bg: string; icon: string }> = {
+    success: { bg: 'rgba(52,168,83,0.15)', icon: '✓' },
+    error:   { bg: 'rgba(234,67,53,0.15)', icon: '✗' },
+  };
+
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', padding: 16 }}>
+    <div style={{ maxWidth: 480, margin: '0 auto', padding: 16, position: 'relative' }}>
+      {/* Feedback flash overlay */}
+      {feedbackKind !== 'idle' && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 50,
+          background: feedbackOverlay[feedbackKind].bg,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 80, pointerEvents: 'none',
+          transition: 'opacity 0.3s',
+          color: feedbackKind === 'success' ? '#34a853' : '#ea4335',
+        }}>
+          {feedbackOverlay[feedbackKind].icon}
+        </div>
+      )}
+
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12, gap: 8, flexWrap: 'wrap' }}>
         <button
           onClick={() => navigate('/workshops')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1a73e8', fontSize: 14, padding: 0, marginRight: 4 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1a73e8', fontSize: 14, padding: 0 }}
         >
           ← Quay lại
         </button>
         <h2 style={{ margin: 0, fontSize: 18, flex: 1 }}>Scan QR Check-in</h2>
-        <span style={{ fontSize: 12, color: isOnline ? '#34a853' : '#ea4335', fontWeight: 600 }}>
-          {isOnline ? '● Online' : '● Offline'}
-        </span>
         <button
           onClick={() => onLogout()}
           style={{ background: 'none', border: '1px solid #ea4335', color: '#ea4335', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
         >
           Đăng xuất
         </button>
+      </div>
+
+      {/* Offline indicator */}
+      <div style={{ marginBottom: 12 }}>
+        <OfflineIndicator isOnline={isOnline} pendingCount={pendingCount} syncing={syncing} />
       </div>
 
       {/* Roster status */}
@@ -321,27 +361,22 @@ export default function ScanPage({ auth, onLogout }: Props) {
         </div>
       )}
 
-      {/* QR Scanner (Task 8.6) */}
+      {/* QR Scanner */}
       <div id="qr-reader" style={{ width: '100%', marginBottom: 12 }} />
 
-      {/* Scan result feedback */}
+      {/* Scan result message */}
       {scanResult && (
-        <div
-          style={{
-            background: resultColor[scanResult.status] + '22',
-            border: `1px solid ${resultColor[scanResult.status]}`,
-            borderRadius: 8,
-            padding: '10px 14px',
-            marginBottom: 12,
-            fontWeight: 600,
-            color: resultColor[scanResult.status],
-          }}
-        >
+        <div style={{
+          background: resultColor[scanResult.status] + '22',
+          border: `1px solid ${resultColor[scanResult.status]}`,
+          borderRadius: 8, padding: '10px 14px', marginBottom: 12,
+          fontWeight: 600, color: resultColor[scanResult.status],
+        }}>
           {scanResult.message}
         </div>
       )}
 
-      {/* Sync panel (Task 8.9) */}
+      {/* Sync panel */}
       <div style={{ background: '#f8f9fa', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ fontSize: 13, flex: 1 }}>
           {pendingCount > 0 ? `${pendingCount} sự kiện chờ đồng bộ` : 'Không có sự kiện chờ'}
@@ -350,11 +385,9 @@ export default function ScanPage({ auth, onLogout }: Props) {
           onClick={doSync}
           disabled={syncing || pendingCount === 0}
           style={{
-            padding: '6px 14px',
-            borderRadius: 6,
+            padding: '6px 14px', borderRadius: 6,
             background: syncing || pendingCount === 0 ? '#ccc' : '#1a73e8',
-            color: '#fff',
-            border: 'none',
+            color: '#fff', border: 'none',
             cursor: syncing || pendingCount === 0 ? 'not-allowed' : 'pointer',
             fontSize: 13,
           }}

@@ -1,16 +1,80 @@
-import { useState, useEffect, useRef } from 'react';
-import { api, Workshop, WorkshopStats, SummaryStatus } from '../api/client';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { api, Workshop, WorkshopStats, SummaryStatus, Attendee } from '../api/client';
+import { Skeleton } from '@unihub/ui';
 
-// Convert ISO UTC string → "yyyy-MM-ddThh:mm" for datetime-local input
-function toDatetimeLocal(iso?: string): string {
-  if (!iso) return '';
+const pad = (n: number) => String(n).padStart(2, '0');
+
+function parseISOToLocal(iso?: string): { date: string; time: string } {
+  if (!iso) return { date: '', time: '' };
   const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  if (isNaN(d.getTime())) return { date: '', time: '' };
+  return {
+    date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    time: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+  };
 }
 
-export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string; onBack: () => void }) {
-  const isNew = workshopId === '__new__';
+function DateTimeInput({ label, value, onChange }: {
+  label: string;
+  value?: string;
+  onChange: (iso: string) => void;
+}) {
+  const [localDate, setLocalDate] = useState(() => parseISOToLocal(value).date);
+  const [localTime, setLocalTime] = useState(() => parseISOToLocal(value).time);
+  const initialised = useRef(!!value);
+
+  // Sync once when value first arrives (async load of existing workshop)
+  useEffect(() => {
+    if (value && !initialised.current) {
+      const { date, time } = parseISOToLocal(value);
+      setLocalDate(date);
+      setLocalTime(time);
+      initialised.current = true;
+    }
+  }, [value]);
+
+  const commit = (d: string, t: string) => {
+    if (!d || !t) return;
+    const [y, mo, day] = d.split('-').map(Number);
+    const [h, mi] = t.split(':').map(Number);
+    onChange(new Date(y, mo - 1, day, h, mi).toISOString());
+  };
+
+  const preview = localDate && localTime
+    ? new Date(localDate + 'T' + localTime).toLocaleString('vi-VN', { dateStyle: 'long', timeStyle: 'short' })
+    : null;
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 }}>{label}</label>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          type="date"
+          style={{ flex: 2, padding: '9px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' as const }}
+          value={localDate}
+          onChange={e => { setLocalDate(e.target.value); commit(e.target.value, localTime); }}
+        />
+        <input
+          type="time"
+          style={{ flex: 1, padding: '9px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' as const }}
+          value={localTime}
+          onChange={e => { setLocalTime(e.target.value); commit(localDate, e.target.value); }}
+        />
+      </div>
+      {preview
+        ? <div style={{ fontSize: 12, color: '#6366f1', marginTop: 4 }}>✓ {preview}</div>
+        : <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>Chọn ngày rồi chọn giờ (định dạng 24h)</div>
+      }
+    </div>
+  );
+}
+
+export function WorkshopDetailPage() {
+  const { id: workshopId } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const isNew = workshopId === 'new';
+
   const [workshop, setWorkshop] = useState<Partial<Workshop>>({
     feeType: 'FREE', status: 'DRAFT',
   });
@@ -24,9 +88,26 @@ export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string;
   const [uploading, setUploading] = useState(false);
   const [savingSummary, setSavingSummary] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [attendees, setAttendees] = useState<Attendee[]>([]);
+  const [attendeeSearch, setAttendeeSearch] = useState('');
+
+  const filteredAttendees = useMemo(() => {
+    const q = attendeeSearch.trim().toLowerCase();
+    if (!q) return attendees;
+    return attendees.filter(a =>
+      a.student.fullName.toLowerCase().includes(q) ||
+      a.student.email.toLowerCase().includes(q)
+    );
+  }, [attendees, attendeeSearch]);
 
   useEffect(() => {
-    if (!isNew) {
+    if (!isNew && workshopId) {
+      api.getAttendees(workshopId).then(r => setAttendees(r.data)).catch(() => {});
+    }
+  }, [workshopId, isNew]);
+
+  useEffect(() => {
+    if (!isNew && workshopId) {
       Promise.all([
         api.getWorkshops().then(r => r.data.find(w => w.id === workshopId)),
         api.getStats(workshopId).catch(() => null),
@@ -41,7 +122,7 @@ export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string;
 
   // Poll summary status every 3s while PROCESSING
   useEffect(() => {
-    if (isNew || summary?.summaryStatus !== 'PROCESSING') return;
+    if (isNew || !workshopId || summary?.summaryStatus !== 'PROCESSING') return;
     const id = setInterval(async () => {
       const refreshed = await api.getSummaryStatus(workshopId).catch(() => null);
       if (!refreshed) return;
@@ -52,6 +133,7 @@ export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string;
   }, [workshopId, isNew, summary?.summaryStatus]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!workshopId) return;
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true); setSummaryMsg('');
@@ -69,6 +151,7 @@ export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string;
   };
 
   const saveSummary = async () => {
+    if (!workshopId) return;
     setSavingSummary(true); setSummaryMsg('');
     try {
       const res = await api.updateSummary(workshopId, editedSummary);
@@ -82,14 +165,12 @@ export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string;
   const save = async () => {
     setSaving(true); setMsg('');
     try {
-      // Loại bỏ các trường không được phép gửi trực tiếp
       const { status, id, confirmedCount, heldCount, summaryStatus, ...data } = workshop;
-      
       if (isNew) {
         await api.createWorkshop(data);
         setMsg('✅ Tạo workshop thành công!');
-        setTimeout(onBack, 1500);
-      } else {
+        setTimeout(() => navigate('/workshops'), 1500);
+      } else if (workshopId) {
         await api.updateWorkshop(workshopId, data);
         setMsg('✅ Đã lưu thay đổi!');
       }
@@ -99,24 +180,15 @@ export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string;
 
   const field = (label: string, key: keyof Workshop, type = 'text') => {
     const raw = workshop[key] as string | undefined;
-    const displayValue = type === 'datetime-local' ? toDatetimeLocal(raw) : (raw ?? '');
     return (
       <div style={s.field} key={key}>
         <label style={s.label}>{label}</label>
         <input
           style={s.input}
           type={type}
-          value={displayValue}
+          value={raw ?? ''}
           onChange={e => {
-            let val: string | number = e.target.value;
-            if (type === 'number') {
-              val = Number(val);
-            } else if (type === 'datetime-local' && e.target.value) {
-              const [datePart, timePart] = e.target.value.split('T');
-              const [y, mo, d] = datePart.split('-').map(Number);
-              const [h, mi] = timePart.split(':').map(Number);
-              val = new Date(y, mo - 1, d, h, mi).toISOString();
-            }
+            const val: string | number = type === 'number' ? Number(e.target.value) : e.target.value;
             setWorkshop(p => ({ ...p, [key]: val }));
           }}
         />
@@ -124,11 +196,28 @@ export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string;
     );
   };
 
-  if (loading) return <div style={{ padding: 60, textAlign: 'center', color: '#94a3b8' }}>Đang tải...</div>;
+
+  if (loading) return (
+    <div>
+      <div style={{ marginBottom: 16 }}><Skeleton width={80} height={14} /></div>
+      <div style={{ marginBottom: 20 }}><Skeleton width={300} height={28} /></div>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' as const }}>
+        {[1,2,3,4,5].map(i => <Skeleton key={i} width={120} height={72} borderRadius={10} />)}
+      </div>
+      <div style={{ background: '#fff', borderRadius: 12, padding: 28, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
+        {[1,2,3,4,5,6].map(i => (
+          <div key={i} style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 6 }}><Skeleton width={100} height={13} /></div>
+            <Skeleton height={38} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div>
-      <button style={s.back} onClick={onBack}>← Danh sách</button>
+      <button style={s.back} onClick={() => navigate('/workshops')}>← Danh sách</button>
       <h2 style={s.heading}>{isNew ? 'Tạo Workshop mới' : workshop.title}</h2>
 
       {stats && (
@@ -163,8 +252,8 @@ export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string;
           </select>
         </div>
         {workshop.feeType === 'PAID' && field('Học phí (VNĐ)', 'price', 'number')}
-        {field('Giờ bắt đầu', 'startsAt', 'datetime-local')}
-        {field('Giờ kết thúc', 'endsAt', 'datetime-local')}
+        <DateTimeInput label="Giờ bắt đầu" value={workshop.startsAt} onChange={v => setWorkshop(p => ({ ...p, startsAt: v }))} />
+        <DateTimeInput label="Giờ kết thúc" value={workshop.endsAt} onChange={v => setWorkshop(p => ({ ...p, endsAt: v }))} />
 
         {msg && <div style={{ padding: '10px 14px', borderRadius: 8, background: msg.startsWith('✅') ? '#dcfce7' : '#fee2e2', marginBottom: 12 }}>{msg}</div>}
 
@@ -173,13 +262,12 @@ export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string;
         </button>
       </div>
 
-      {!isNew && (
+      {!isNew && workshopId && (
         <div style={{ ...s.form, marginTop: 24 }}>
           <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 16 }}>
             Tóm tắt AI
           </h3>
 
-          {/* Status badge */}
           <div style={{ marginBottom: 16 }}>
             <span style={summaryBadge(summary?.summaryStatus)}>
               {summary?.summaryStatus ?? 'PENDING'}
@@ -196,7 +284,6 @@ export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string;
             )}
           </div>
 
-          {/* PDF upload */}
           <div style={{ marginBottom: 16 }}>
             <label style={s.label}>Tải lên tài liệu PDF (≤ 20 MB)</label>
             <input
@@ -210,7 +297,6 @@ export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string;
             {uploading && <div style={{ fontSize: 12, color: '#6366f1', marginTop: 4 }}>Đang tải lên...</div>}
           </div>
 
-          {/* Summary display / edit */}
           {['AI_GENERATED', 'ADMIN_EDITED'].includes(summary?.summaryStatus ?? '') && (
             <div style={{ marginBottom: 16 }}>
               <label style={s.label}>Nội dung tóm tắt</label>
@@ -230,6 +316,61 @@ export function WorkshopDetailPage({ workshopId, onBack }: { workshopId: string;
               {summaryMsg}
             </div>
           )}
+        </div>
+      )}
+
+      {!isNew && (
+        <div style={{ ...s.form, marginTop: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1e293b', margin: 0 }}>
+              Danh sách tham dự {attendees.length > 0 ? `(${attendees.length})` : ''}
+            </h3>
+            <div style={{ position: 'relative' }}>
+              <input
+                style={{ ...s.input, width: 240, paddingRight: attendeeSearch ? 32 : 12 }}
+                placeholder="Tìm theo tên, email..."
+                value={attendeeSearch}
+                onChange={e => setAttendeeSearch(e.target.value)}
+              />
+              {attendeeSearch && (
+                <button
+                  onClick={() => setAttendeeSearch('')}
+                  style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 16, lineHeight: 1 }}
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc' }}>
+                  {['Họ tên', 'Email', 'Mã SV', 'Trạng thái', 'Check-in'].map(h => (
+                    <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 12, color: '#64748b', fontWeight: 600, borderBottom: '1px solid #e2e8f0' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAttendees.map(a => (
+                  <tr key={a.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '10px 12px', fontSize: 14 }}>{a.student.fullName}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 13, color: '#64748b' }}>{a.student.email}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 13, color: '#64748b' }}>{a.student.studentCode}</td>
+                    <td style={{ padding: '10px 12px' }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 12, background: a.status === 'CONFIRMED' ? '#dcfce7' : '#fef3c7', color: a.status === 'CONFIRMED' ? '#166534' : '#92400e' }}>
+                        {a.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '10px 12px', fontSize: 13 }}>{a.checkedIn ? '✓' : '—'}</td>
+                  </tr>
+                ))}
+                {filteredAttendees.length === 0 && (
+                  <tr><td colSpan={5} style={{ padding: 24, textAlign: 'center', color: '#94a3b8' }}>Không tìm thấy kết quả.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
