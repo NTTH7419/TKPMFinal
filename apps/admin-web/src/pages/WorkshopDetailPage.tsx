@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, Workshop, WorkshopStats, SummaryStatus, Attendee } from '../api/client';
 import { Skeleton } from '@unihub/ui';
+import { MarkdownSummary } from '@unihub/ui/components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faCheck, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { ToastContainer } from '../components/Toast';
@@ -301,6 +302,10 @@ export function WorkshopDetailPage() {
 
           {['AI_GENERATED', 'ADMIN_EDITED'].includes(summary?.summaryStatus ?? '') && (
             <div style={{ marginBottom: 16 }}>
+              <div style={s.summaryPreview}>
+                <div style={s.summaryPreviewTitle}>Bản xem trước</div>
+                <MarkdownSummary content={editedSummary} />
+              </div>
               <label style={s.label}>Nội dung tóm tắt</label>
               <textarea
                 style={{ ...s.input, height: 200, resize: 'vertical', fontFamily: 'inherit' }}
@@ -398,5 +403,7 @@ const s: Record<string, React.CSSProperties> = {
   field: { marginBottom: 16 },
   label: { display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 6 },
   input: { width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 14, boxSizing: 'border-box' },
+  summaryPreview: { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 16, marginBottom: 14 },
+  summaryPreviewTitle: { fontSize: 12, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: 0, marginBottom: 10 },
   saveBtn: { background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', border: 'none', borderRadius: 10, padding: '12px 28px', fontSize: 15, fontWeight: 600, cursor: 'pointer', width: '100%', marginTop: 8 },
 };
