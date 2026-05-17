@@ -7,6 +7,11 @@
     "*.css"
   ],
   "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
+    },
     "./tailwind-preset": {
       "types": "./dist/tailwind-preset.d.ts",
       "require": "./dist/tailwind-preset.cjs",
