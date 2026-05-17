@@ -3,6 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getWorkshop, WorkshopDetail, api } from '../api/client';
 import { useSeatStream } from '../hooks/useSeatStream';
 import { Skeleton } from '@unihub/ui';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft, faUser, faBuilding, faClock, faChair, faMoneyBillWave, faTag, faClipboardList, faMap } from '@fortawesome/free-solid-svg-icons';
+import { ToastContainer } from '../components/Toast';
+import { useToast } from '../hooks/useToast';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('vi-VN', { dateStyle: 'long', timeStyle: 'short' });
@@ -14,8 +18,8 @@ export function WorkshopDetailPage() {
   const [workshop, setWorkshop] = useState<WorkshopDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
-  const [msg, setMsg] = useState('');
   const { seatData } = useSeatStream(workshopId ?? null);
+  const { toasts, addToast, removeToast } = useToast();
 
   useEffect(() => {
     if (!workshopId) return;
@@ -27,7 +31,6 @@ export function WorkshopDetailPage() {
   const handleRegister = async () => {
     if (!workshopId) return;
     setRegistering(true);
-    setMsg('');
     try {
       try {
         await api.getQueueToken(workshopId);
@@ -38,13 +41,13 @@ export function WorkshopDetailPage() {
       const idempotencyKey = crypto.randomUUID();
       const res = await api.registerWorkshop(workshopId, idempotencyKey);
       if (res.status === 'CONFIRMED') {
-        setMsg('✅ Đăng ký thành công!');
+        addToast('Đăng ký thành công!', 'success');
       } else if (res.status === 'PENDING_PAYMENT') {
-        setMsg('⏳ Vui lòng thanh toán trong 10 phút!');
+        addToast('Vui lòng thanh toán trong 10 phút!', 'info');
         setTimeout(() => navigate(`/payment/${res.id}`), 500);
       }
     } catch (e: any) {
-      setMsg(`❌ ${e.message}`);
+      addToast(e.message, 'error');
     } finally {
       setRegistering(false);
     }
@@ -69,23 +72,24 @@ export function WorkshopDetailPage() {
     : workshop.capacity - workshop.confirmedCount - workshop.heldCount;
 
   return (
+    <>
     <div style={styles.page}>
-      <button onClick={() => navigate('/workshops')} style={styles.back}>← Quay lại</button>
+      <button onClick={() => navigate('/workshops')} style={styles.back}><FontAwesomeIcon icon={faArrowLeft} style={{ marginRight: 6 }} />Quay lại</button>
 
       <div className="detail-card" style={styles.card}>
         <h1 style={styles.title}>{workshop.title}</h1>
         <div style={styles.meta}>
-          <div style={styles.metaItem}><span>👤</span> {workshop.speakerName}</div>
-          <div style={styles.metaItem}><span>🏛️</span> {workshop.roomName}</div>
-          <div style={styles.metaItem}><span>🕐</span> {formatDate(workshop.startsAt)} – {formatDate(workshop.endsAt)}</div>
+          <div style={styles.metaItem}><FontAwesomeIcon icon={faUser} style={{ width: 16 }} /> {workshop.speakerName}</div>
+          <div style={styles.metaItem}><FontAwesomeIcon icon={faBuilding} style={{ width: 16 }} /> {workshop.roomName}</div>
+          <div style={styles.metaItem}><FontAwesomeIcon icon={faClock} style={{ width: 16 }} /> {formatDate(workshop.startsAt)} – {formatDate(workshop.endsAt)}</div>
           <div style={styles.metaItem}>
-            <span>💺</span>
+            <FontAwesomeIcon icon={faChair} style={{ width: 16 }} />
             <strong style={{ color: remaining > 0 ? '#22c55e' : '#ef4444' }}>
               {remaining > 0 ? `Còn ${remaining} / ${workshop.capacity} chỗ` : 'Đã hết chỗ'}
             </strong>
           </div>
           <div style={styles.metaItem}>
-            <span>💰</span>
+            <FontAwesomeIcon icon={workshop.feeType === 'FREE' ? faTag : faMoneyBillWave} style={{ width: 16 }} />
             {workshop.feeType === 'FREE'
               ? 'Miễn phí'
               : `${Number(workshop.price).toLocaleString('vi-VN')} đ`}
@@ -94,21 +98,15 @@ export function WorkshopDetailPage() {
 
         {workshop.aiSummary && (
           <div style={styles.summary}>
-            <h3>📋 Tóm tắt nội dung</h3>
+            <h3><FontAwesomeIcon icon={faClipboardList} style={{ marginRight: 8 }} />Tóm tắt nội dung</h3>
             <p>{workshop.aiSummary}</p>
           </div>
         )}
 
         {workshop.roomMapUrl && (
           <div style={styles.map}>
-            <h3>🗺️ Sơ đồ phòng</h3>
+            <h3><FontAwesomeIcon icon={faMap} style={{ marginRight: 8 }} />Sơ đồ phòng</h3>
             <img src={workshop.roomMapUrl} alt="Room map" style={{ maxWidth: '100%', borderRadius: 8 }} />
-          </div>
-        )}
-
-        {msg && (
-          <div style={{ padding: 12, borderRadius: 8, marginBottom: 16, textAlign: 'center', background: msg.startsWith('❌') ? '#fee2e2' : '#dcfce7', color: msg.startsWith('❌') ? '#ef4444' : '#166534', fontWeight: 600 }}>
-            {msg}
           </div>
         )}
 
@@ -121,6 +119,8 @@ export function WorkshopDetailPage() {
         </button>
       </div>
     </div>
+    <ToastContainer toasts={toasts} onRemove={removeToast} />
+    </>
   );
 }
 

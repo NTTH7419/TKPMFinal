@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, ImportBatch, ImportBatchDetail } from '../api/client';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft, faArrowRight, faDownload, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 const STATUS_COLOR: Record<string, string> = {
   PENDING: '#94a3b8',
@@ -34,7 +36,7 @@ function BatchDetail({ batchId, onBack }: { batchId: string; onBack: () => void 
       .finally(() => setLoading(false));
   }, [batchId]);
 
-  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Đang tải...</div>;
+  if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}><FontAwesomeIcon icon={faSpinner} spin style={{ marginRight: 8 }} />Đang tải...</div>;
   if (!detail) return <div style={{ padding: 40, color: '#ef4444' }}>Không tìm thấy batch.</div>;
 
   const displayRows = errorFilter ? detail.rows.filter(r => r.rowStatus !== 'VALID') : detail.rows;
@@ -56,7 +58,7 @@ function BatchDetail({ batchId, onBack }: { batchId: string; onBack: () => void 
 
   return (
     <div>
-      <button style={s.back} onClick={onBack}>← Danh sách import</button>
+      <button style={s.back} onClick={onBack}><FontAwesomeIcon icon={faArrowLeft} style={{ marginRight: 6 }} />Danh sách import</button>
       <h2 style={s.heading}>Chi tiết batch import</h2>
 
       <div style={s.infoCard}>
@@ -95,7 +97,7 @@ function BatchDetail({ batchId, onBack }: { batchId: string; onBack: () => void 
         </label>
         {detail.errorRows > 0 && (
           <button style={s.downloadBtn} onClick={downloadErrorCsv}>
-            ↓ Tải CSV lỗi
+            <FontAwesomeIcon icon={faDownload} style={{ marginRight: 6 }} />Tải CSV lỗi
           </button>
         )}
       </div>
@@ -163,7 +165,7 @@ export function ImportHistoryPage() {
       </p>
 
       {loading ? (
-        <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Đang tải...</div>
+        <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}><FontAwesomeIcon icon={faSpinner} spin style={{ marginRight: 8 }} />Đang tải...</div>
       ) : batches.length === 0 ? (
         <div style={{ padding: 40, textAlign: 'center', color: '#94a3b8' }}>Chưa có batch nào.</div>
       ) : (
@@ -205,9 +207,9 @@ export function ImportHistoryPage() {
 
       {totalPages > 1 && (
         <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
-          <button style={s.pageBtn} disabled={page <= 1} onClick={() => setPage(p => p - 1)}>←</button>
+          <button style={s.pageBtn} disabled={page <= 1} onClick={() => setPage(p => p - 1)}><FontAwesomeIcon icon={faArrowLeft} /></button>
           <span style={{ lineHeight: '32px', fontSize: 14 }}>{page} / {totalPages}</span>
-          <button style={s.pageBtn} disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>→</button>
+          <button style={s.pageBtn} disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}><FontAwesomeIcon icon={faArrowRight} /></button>
         </div>
       )}
     </div>

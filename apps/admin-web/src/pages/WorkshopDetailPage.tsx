@@ -2,6 +2,10 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, Workshop, WorkshopStats, SummaryStatus, Attendee } from '../api/client';
 import { Skeleton } from '@unihub/ui';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft, faCheck, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { ToastContainer } from '../components/Toast';
+import { useToast } from '../hooks/useToast';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -63,7 +67,7 @@ function DateTimeInput({ label, value, onChange }: {
         />
       </div>
       {preview
-        ? <div style={{ fontSize: 12, color: '#6366f1', marginTop: 4 }}>✓ {preview}</div>
+        ? <div style={{ fontSize: 12, color: '#6366f1', marginTop: 4 }}><FontAwesomeIcon icon={faCheck} style={{ marginRight: 4 }} />{preview}</div>
         : <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>Chọn ngày rồi chọn giờ (định dạng 24h)</div>
       }
     </div>
@@ -81,10 +85,9 @@ export function WorkshopDetailPage() {
   const [stats, setStats] = useState<WorkshopStats | null>(null);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState('');
   const [summary, setSummary] = useState<SummaryStatus | null>(null);
   const [editedSummary, setEditedSummary] = useState('');
-  const [summaryMsg, setSummaryMsg] = useState('');
+  const { toasts, addToast, removeToast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [savingSummary, setSavingSummary] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -136,14 +139,14 @@ export function WorkshopDetailPage() {
     if (!workshopId) return;
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true); setSummaryMsg('');
+    setUploading(true);
     try {
       await api.uploadDocument(workshopId, file);
-      setSummaryMsg('✅ Tải lên thành công! AI đang xử lý...');
+      addToast('Tải lên thành công! AI đang xử lý...', 'success');
       const refreshed = await api.getSummaryStatus(workshopId).catch(() => null);
       if (refreshed) { setSummary(refreshed); setEditedSummary(refreshed.aiSummary ?? ''); }
     } catch (err: any) {
-      setSummaryMsg(`❌ ${err.message}`);
+      addToast(err.message, 'error');
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = '';
@@ -152,29 +155,29 @@ export function WorkshopDetailPage() {
 
   const saveSummary = async () => {
     if (!workshopId) return;
-    setSavingSummary(true); setSummaryMsg('');
+    setSavingSummary(true);
     try {
       const res = await api.updateSummary(workshopId, editedSummary);
       setSummary(s => s ? { ...s, summaryStatus: res.summaryStatus, aiSummary: res.aiSummary } : s);
-      setSummaryMsg('✅ Đã lưu tóm tắt!');
+      addToast('Đã lưu tóm tắt!', 'success');
     } catch (err: any) {
-      setSummaryMsg(`❌ ${err.message}`);
+      addToast(err.message, 'error');
     } finally { setSavingSummary(false); }
   };
 
   const save = async () => {
-    setSaving(true); setMsg('');
+    setSaving(true);
     try {
       const { status, id, confirmedCount, heldCount, summaryStatus, ...data } = workshop;
       if (isNew) {
         await api.createWorkshop(data);
-        setMsg('✅ Tạo workshop thành công!');
+        addToast('Tạo workshop thành công!', 'success');
         setTimeout(() => navigate('/workshops'), 1500);
       } else if (workshopId) {
         await api.updateWorkshop(workshopId, data);
-        setMsg('✅ Đã lưu thay đổi!');
+        addToast('Đã lưu thay đổi!', 'success');
       }
-    } catch (e: any) { setMsg(`❌ ${e.message}`); }
+    } catch (e: any) { addToast(e.message, 'error'); }
     finally { setSaving(false); }
   };
 
@@ -216,8 +219,9 @@ export function WorkshopDetailPage() {
   );
 
   return (
+    <>
     <div>
-      <button style={s.back} onClick={() => navigate('/workshops')}>← Danh sách</button>
+      <button style={s.back} onClick={() => navigate('/workshops')}><FontAwesomeIcon icon={faArrowLeft} style={{ marginRight: 6 }} />Danh sách</button>
       <h2 style={s.heading}>{isNew ? 'Tạo Workshop mới' : workshop.title}</h2>
 
       {stats && (
@@ -254,8 +258,6 @@ export function WorkshopDetailPage() {
         {workshop.feeType === 'PAID' && field('Học phí (VNĐ)', 'price', 'number')}
         <DateTimeInput label="Giờ bắt đầu" value={workshop.startsAt} onChange={v => setWorkshop(p => ({ ...p, startsAt: v }))} />
         <DateTimeInput label="Giờ kết thúc" value={workshop.endsAt} onChange={v => setWorkshop(p => ({ ...p, endsAt: v }))} />
-
-        {msg && <div style={{ padding: '10px 14px', borderRadius: 8, background: msg.startsWith('✅') ? '#dcfce7' : '#fee2e2', marginBottom: 12 }}>{msg}</div>}
 
         <button style={s.saveBtn} onClick={save} disabled={saving}>
           {saving ? 'Đang lưu...' : isNew ? 'Tạo workshop' : 'Lưu thay đổi'}
@@ -294,7 +296,7 @@ export function WorkshopDetailPage() {
               disabled={uploading}
               style={{ fontSize: 13 }}
             />
-            {uploading && <div style={{ fontSize: 12, color: '#6366f1', marginTop: 4 }}>Đang tải lên...</div>}
+            {uploading && <div style={{ fontSize: 12, color: '#6366f1', marginTop: 4 }}><FontAwesomeIcon icon={faSpinner} spin style={{ marginRight: 6 }} />Đang tải lên...</div>}
           </div>
 
           {['AI_GENERATED', 'ADMIN_EDITED'].includes(summary?.summaryStatus ?? '') && (
@@ -311,11 +313,6 @@ export function WorkshopDetailPage() {
             </div>
           )}
 
-          {summaryMsg && (
-            <div style={{ padding: '10px 14px', borderRadius: 8, background: summaryMsg.startsWith('✅') ? '#dcfce7' : '#fee2e2' }}>
-              {summaryMsg}
-            </div>
-          )}
         </div>
       )}
 
@@ -362,7 +359,7 @@ export function WorkshopDetailPage() {
                         {a.status}
                       </span>
                     </td>
-                    <td style={{ padding: '10px 12px', fontSize: 13 }}>{a.checkedIn ? '✓' : '—'}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 13 }}>{a.checkedIn ? <FontAwesomeIcon icon={faCheck} style={{ color: '#22c55e' }} /> : '—'}</td>
                   </tr>
                 ))}
                 {filteredAttendees.length === 0 && (
@@ -374,6 +371,8 @@ export function WorkshopDetailPage() {
         </div>
       )}
     </div>
+    <ToastContainer toasts={toasts} onRemove={removeToast} />
+    </>
   );
 }
 

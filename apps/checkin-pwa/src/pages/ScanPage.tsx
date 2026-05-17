@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft, faCheck, faTimes, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import type { AuthState } from '../App';
 import OfflineIndicator from '../components/OfflineIndicator';
@@ -230,8 +232,8 @@ export default function ScanPage({ auth, onLogout }: Props) {
     await refreshPendingCount();
 
     const resultMap: Record<string, ScanResult> = {
-      PENDING_SYNC: { status: 'ACCEPTED', message: '✓ Check-in thành công (chờ đồng bộ)' },
-      NEEDS_REVIEW: { status: 'NEEDS_REVIEW', message: '⚠ Cần xem xét (danh sách có thể lỗi thời)' },
+      PENDING_SYNC: { status: 'ACCEPTED', message: 'Check-in thành công (chờ đồng bộ)' },
+      NEEDS_REVIEW: { status: 'NEEDS_REVIEW', message: 'Cần xem xét (danh sách có thể lỗi thời)' },
     };
     const result = resultMap[eventStatus] ?? { status: 'INVALID', message: 'Lỗi không xác định' };
     setScanResult(result);
@@ -307,9 +309,9 @@ export default function ScanPage({ auth, onLogout }: Props) {
     DUPLICATE: '#ff8c00',
   };
 
-  const feedbackOverlay: Record<string, { bg: string; icon: string }> = {
-    success: { bg: 'rgba(52,168,83,0.15)', icon: '✓' },
-    error:   { bg: 'rgba(234,67,53,0.15)', icon: '✗' },
+  const feedbackOverlay: Record<string, { bg: string; icon: typeof faCheck }> = {
+    success: { bg: 'rgba(52,168,83,0.15)', icon: faCheck },
+    error:   { bg: 'rgba(234,67,53,0.15)', icon: faTimes },
   };
 
   return (
@@ -324,7 +326,7 @@ export default function ScanPage({ auth, onLogout }: Props) {
           transition: 'opacity 0.3s',
           color: feedbackKind === 'success' ? '#34a853' : '#ea4335',
         }}>
-          {feedbackOverlay[feedbackKind].icon}
+          <FontAwesomeIcon icon={feedbackOverlay[feedbackKind].icon} />
         </div>
       )}
 
@@ -334,7 +336,7 @@ export default function ScanPage({ auth, onLogout }: Props) {
           onClick={() => navigate('/workshops')}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1a73e8', fontSize: 14, padding: 0 }}
         >
-          ← Quay lại
+          <FontAwesomeIcon icon={faArrowLeft} style={{ marginRight: 6 }} />Quay lại
         </button>
         <h2 style={{ margin: 0, fontSize: 18, flex: 1 }}>Scan QR Check-in</h2>
         <button
@@ -353,11 +355,11 @@ export default function ScanPage({ auth, onLogout }: Props) {
       {/* Roster status */}
       {roster ? (
         <div style={{ background: '#f0faf4', border: '1px solid #34a853', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>
-          ✓ Đã tải {roster.roster.length} đăng ký lúc {new Date(roster.preloadedAt).toLocaleTimeString('vi-VN')}
+          <FontAwesomeIcon icon={faCheck} style={{ marginRight: 6, color: '#34a853' }} />Đã tải {roster.roster.length} đăng ký lúc {new Date(roster.preloadedAt).toLocaleTimeString('vi-VN')}
         </div>
       ) : (
         <div style={{ background: '#fff8e1', border: '1px solid #f9ab00', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>
-          ⚠ Chưa tải danh sách — các lần scan sẽ được lưu để xem xét (NEEDS_REVIEW)
+          <FontAwesomeIcon icon={faTriangleExclamation} style={{ marginRight: 6, color: '#f9ab00' }} />Chưa tải danh sách — các lần scan sẽ được lưu để xem xét (NEEDS_REVIEW)
         </div>
       )}
 
@@ -372,6 +374,10 @@ export default function ScanPage({ auth, onLogout }: Props) {
           borderRadius: 8, padding: '10px 14px', marginBottom: 12,
           fontWeight: 600, color: resultColor[scanResult.status],
         }}>
+          <FontAwesomeIcon
+            icon={scanResult.status === 'ACCEPTED' ? faCheck : scanResult.status === 'NEEDS_REVIEW' ? faTriangleExclamation : faTimes}
+            style={{ marginRight: 8 }}
+          />
           {scanResult.message}
         </div>
       )}

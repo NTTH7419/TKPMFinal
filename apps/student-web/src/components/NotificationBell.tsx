@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { api, Notification } from '../api/client';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faBell, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 const EVENT_LABELS: Record<string, string> = {
   RegistrationConfirmed: 'Đăng ký thành công',
@@ -79,7 +81,7 @@ export default function NotificationBell() {
           lineHeight: 1,
         }}
       >
-        🔔
+        <FontAwesomeIcon icon={faBell} />
         {unreadCount > 0 && (
           <span
             style={{
@@ -143,7 +145,7 @@ export default function NotificationBell() {
 
           {loading && notifications.length === 0 ? (
             <p style={{ textAlign: 'center', padding: 24, color: '#9ca3af', fontSize: 14 }}>
-              Đang tải...
+              <FontAwesomeIcon icon={faSpinner} spin style={{ marginRight: 8 }} />Đang tải...
             </p>
           ) : notifications.length === 0 ? (
             <p style={{ textAlign: 'center', padding: 24, color: '#9ca3af', fontSize: 14 }}>

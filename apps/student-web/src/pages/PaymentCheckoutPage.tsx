@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, MyRegistration } from '../api/client';
 import StepIndicator from '../components/StepIndicator';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 const STEPS = ['Xem lại', 'Thanh toán', 'Hoàn tất'];
 
@@ -68,7 +70,7 @@ export function PaymentCheckoutPage() {
     }
   };
 
-  if (loading) return <div style={styles.loading}>Đang tải...</div>;
+  if (loading) return <div style={styles.loading}><FontAwesomeIcon icon={faSpinner} spin style={{ marginRight: 8 }} />Đang tải...</div>;
   if (!registration) return <div style={styles.loading}>Không tìm thấy đơn đăng ký</div>;
 
   return (

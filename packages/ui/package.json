@@ -33,7 +33,7 @@
   },
   "scripts": {
     "build": "tsx scripts/emit-css-variables.ts && tsup",
-    "dev": "vite dev",
+    "dev": "tsup --watch",
     "emit:css": "tsx scripts/emit-css-variables.ts",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "test": "vitest run",

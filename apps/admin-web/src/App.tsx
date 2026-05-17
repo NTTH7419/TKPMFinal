@@ -1,4 +1,6 @@
 import { Routes, Route, Navigate, useNavigate, useLocation, Link } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faGraduationCap } from '@fortawesome/free-solid-svg-icons';
 import { WorkshopListPage } from './pages/WorkshopListPage';
 import { WorkshopDetailPage } from './pages/WorkshopDetailPage';
 import { ImportHistoryPage } from './pages/ImportHistoryPage';
@@ -30,7 +32,7 @@ function Layout() {
       <nav style={{ background: '#1e293b', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 60 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           <Link to="/workshops" style={{ color: '#fff', fontWeight: 700, fontSize: 20, textDecoration: 'none' }}>
-            🎓 UniHub Admin
+            <FontAwesomeIcon icon={faGraduationCap} style={{ marginRight: 8 }} />UniHub Admin
           </Link>
           <Link
             to="/workshops"

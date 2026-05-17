@@ -1,3 +1,6 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircle } from '@fortawesome/free-solid-svg-icons';
+
 interface Props {
   isOnline: boolean;
   pendingCount: number;
@@ -18,7 +21,7 @@ export default function OfflineIndicator({ isOnline, pendingCount, syncing }: Pr
       background: bg, border: `1px solid ${border}`,
       borderRadius: 8, padding: '6px 12px', fontSize: 13,
     }}>
-      <span style={{ color: dotColor, fontSize: 10 }}>●</span>
+      <FontAwesomeIcon icon={faCircle} style={{ color: dotColor, fontSize: 10 }} />
       <span style={{ fontWeight: 600, color: '#333' }}>{statusText}</span>
       {pendingCount > 0 && !syncing && (
         <span style={{

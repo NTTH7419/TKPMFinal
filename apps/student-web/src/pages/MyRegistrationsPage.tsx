@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { api, MyRegistration } from '../api/client';
 import { Skeleton } from '@unihub/ui';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUser, faBuilding, faClock, faMoneyBillWave, faExpand, faDownload, faSpinner, faCalendarXmark } from '@fortawesome/free-solid-svg-icons';
+import { useNavigate } from 'react-router-dom';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('vi-VN', { dateStyle: 'medium', timeStyle: 'short' });
@@ -67,14 +70,14 @@ function QrModal({ registrationId, workshopTitle, onClose }: { registrationId: s
         <div style={s.modal} onClick={(e) => e.stopPropagation()}>
           <h3 style={s.modalTitle}>Mã QR tham dự</h3>
           {error && <p style={{ color: '#ef4444', textAlign: 'center' }}>{error}</p>}
-          {!error && !qrDataUrl && <p style={{ color: '#64748b', textAlign: 'center' }}>Đang tải...</p>}
+          {!error && !qrDataUrl && <p style={{ color: '#64748b', textAlign: 'center' }}><FontAwesomeIcon icon={faSpinner} spin style={{ marginRight: 8 }} />Đang tải...</p>}
           {qrDataUrl && (
             <img ref={imgRef} src={qrDataUrl} alt="QR Code" className="qr-img" style={{ display: 'block', margin: '0 auto', borderRadius: 8, cursor: 'pointer' }} onClick={handleFullscreen} />
           )}
           {qrDataUrl && (
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button style={{ ...s.closeBtn, flex: 1, background: '#6366f1', color: '#fff' }} onClick={handleFullscreen}>⛶ Toàn màn hình</button>
-              <button style={{ ...s.closeBtn, flex: 1 }} onClick={handleSave}>↓ Lưu QR</button>
+              <button style={{ ...s.closeBtn, flex: 1, background: '#6366f1', color: '#fff' }} onClick={handleFullscreen}><FontAwesomeIcon icon={faExpand} style={{ marginRight: 6 }} />Toàn màn hình</button>
+              <button style={{ ...s.closeBtn, flex: 1 }} onClick={handleSave}><FontAwesomeIcon icon={faDownload} style={{ marginRight: 6 }} />Lưu QR</button>
             </div>
           )}
           <button style={s.closeBtn} onClick={onClose}>Đóng</button>
@@ -89,6 +92,7 @@ export function MyRegistrationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [qrForId, setQrForId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     api.getMyRegistrations()
@@ -117,7 +121,23 @@ export function MyRegistrationsPage() {
   );
   if (error) return <div style={{ ...s.center, color: '#ef4444' }}>{error}</div>;
   if (registrations.length === 0) {
-    return <div style={s.center}>Bạn chưa đăng ký workshop nào.</div>;
+    return (
+      <div style={{ textAlign: 'center', padding: '60px 16px' }}>
+        <FontAwesomeIcon icon={faCalendarXmark} style={{ fontSize: 56, color: '#cbd5e1', marginBottom: 16 }} />
+        <p style={{ fontSize: 18, fontWeight: 600, color: '#475569', margin: '0 0 8px' }}>
+          Bạn chưa đăng ký workshop nào
+        </p>
+        <p style={{ fontSize: 14, color: '#94a3b8', marginBottom: 24 }}>
+          Khám phá các workshop đang mở đăng ký và tham gia ngay!
+        </p>
+        <button
+          onClick={() => navigate('/workshops')}
+          style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', border: 'none', borderRadius: 10, padding: '12px 28px', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}
+        >
+          Xem Workshop
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -133,10 +153,10 @@ export function MyRegistrationsPage() {
                 <span style={{ ...s.badge, background: st.color }}>{st.label}</span>
               </div>
               <div style={s.meta}>
-                <span>👤 {reg.workshop.speakerName}</span>
-                <span>🏛️ {reg.workshop.roomName}</span>
-                <span>🕐 {formatDate(reg.workshop.startsAt)}</span>
-                <span>💰 {reg.workshop.feeType === 'FREE' ? 'Miễn phí' : 'Có phí'}</span>
+                <span><FontAwesomeIcon icon={faUser} style={{ marginRight: 5 }} />{reg.workshop.speakerName}</span>
+                <span><FontAwesomeIcon icon={faBuilding} style={{ marginRight: 5 }} />{reg.workshop.roomName}</span>
+                <span><FontAwesomeIcon icon={faClock} style={{ marginRight: 5 }} />{formatDate(reg.workshop.startsAt)}</span>
+                <span><FontAwesomeIcon icon={faMoneyBillWave} style={{ marginRight: 5 }} />{reg.workshop.feeType === 'FREE' ? 'Miễn phí' : 'Có phí'}</span>
               </div>
               {reg.status === 'PENDING_PAYMENT' && reg.holdExpiresAt && (
                 <p style={s.warning}>

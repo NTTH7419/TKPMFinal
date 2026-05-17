@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AuthState } from '../App';
 import { saveRoster, getRoster, getCheckinCount } from '../db';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpinner, faCheck } from '@fortawesome/free-solid-svg-icons';
 
 interface Workshop {
   id: string;
@@ -95,7 +97,7 @@ export default function WorkshopSelectPage({ auth, onLogout }: Props) {
     }
   }
 
-  if (loading) return <p style={{ textAlign: 'center', marginTop: 60 }}>Đang tải...</p>;
+  if (loading) return <p style={{ textAlign: 'center', marginTop: 60 }}><FontAwesomeIcon icon={faSpinner} spin style={{ marginRight: 8 }} />Đang tải...</p>;
 
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: 16 }}>
@@ -144,12 +146,12 @@ export default function WorkshopSelectPage({ auth, onLogout }: Props) {
               )}
               {isPreviewed && (
                 <span style={{ position: 'absolute', top: 10, right: 12, fontSize: 11, color: '#34a853', fontWeight: 600 }}>
-                  ✓ Offline
+                  <FontAwesomeIcon icon={faCheck} style={{ marginRight: 4 }} />Offline
                 </span>
               )}
               {isPreloading && (
                 <span style={{ position: 'absolute', top: 10, right: 12, fontSize: 11, color: '#1a73e8' }}>
-                  Đang tải...
+                  <FontAwesomeIcon icon={faSpinner} spin style={{ marginRight: 4 }} />Đang tải...
                 </span>
               )}
             </li>

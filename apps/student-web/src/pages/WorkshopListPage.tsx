@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { getWorkshops, WorkshopSummary } from '../api/client';
 import { useSeatStream } from '../hooks/useSeatStream';
 import { Skeleton } from '@unihub/ui';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faGraduationCap, faUser, faBuilding, faClock, faTag, faMoneyBillWave, faCircle } from '@fortawesome/free-solid-svg-icons';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('vi-VN', {
@@ -27,7 +29,7 @@ function SeatBadge({ workshopId, initialRemaining }: { workshopId: string; initi
       }}
     >
       {remaining > 0 ? `Còn ${remaining} chỗ` : 'Hết chỗ'}
-      {connected && <span style={{ marginLeft: 6, opacity: 0.7 }}>●</span>}
+      {connected && <FontAwesomeIcon icon={faCircle} style={{ marginLeft: 6, opacity: 0.7, fontSize: 8 }} />}
     </span>
   );
 }
@@ -68,7 +70,7 @@ export function WorkshopListPage() {
 
   return (
     <div style={styles.page}>
-      <h1 style={styles.heading}>🎓 Workshop Tuần lễ Kỹ năng & Nghề nghiệp</h1>
+      <h1 style={styles.heading}><FontAwesomeIcon icon={faGraduationCap} style={{ marginRight: 10 }} />Workshop Tuần lễ Kỹ năng & Nghề nghiệp</h1>
       <div className="ws-grid" style={styles.grid}>
         {workshops.map((w) => {
           const remaining = w.capacity - w.confirmedCount - w.heldCount;
@@ -78,13 +80,13 @@ export function WorkshopListPage() {
                 <h2 style={styles.cardTitle}>{w.title}</h2>
                 <SeatBadge workshopId={w.id} initialRemaining={remaining} />
               </div>
-              <p style={styles.speaker}>👤 {w.speakerName}</p>
-              <p style={styles.info}>🏛️ {w.roomName}</p>
-              <p style={styles.info}>🕐 {formatDate(w.startsAt)}</p>
+              <p style={styles.speaker}><FontAwesomeIcon icon={faUser} style={{ marginRight: 6 }} />{w.speakerName}</p>
+              <p style={styles.info}><FontAwesomeIcon icon={faBuilding} style={{ marginRight: 6 }} />{w.roomName}</p>
+              <p style={styles.info}><FontAwesomeIcon icon={faClock} style={{ marginRight: 6 }} />{formatDate(w.startsAt)}</p>
               <p style={styles.fee}>
                 {w.feeType === 'FREE'
-                  ? '🆓 Miễn phí'
-                  : `💰 ${Number(w.price).toLocaleString('vi-VN')} đ`}
+                  ? <><FontAwesomeIcon icon={faTag} style={{ marginRight: 6 }} />Miễn phí</>
+                  : <><FontAwesomeIcon icon={faMoneyBillWave} style={{ marginRight: 6 }} />{Number(w.price).toLocaleString('vi-VN')} đ</>}
               </p>
             </div>
           );
