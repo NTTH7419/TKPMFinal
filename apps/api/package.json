@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "prebuild": "pnpm run db:generate",
     "build": "nest build",
     "start": "node dist/main",
     "dev": "npm run start:dev",
