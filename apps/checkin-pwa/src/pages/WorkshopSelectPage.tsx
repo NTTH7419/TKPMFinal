@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { AuthState } from '../App';
-import { saveRoster, getRoster } from '../db';
+import { saveRoster, getRoster, getCheckinCount } from '../db';
 
 interface Workshop {
   id: string;
@@ -17,13 +17,13 @@ interface Props {
   onLogout: (reason?: string) => void;
 }
 
-const SOON_WINDOW_MS = 2 * 60 * 60 * 1000; // 2 hours
-
+// Show workshops starting within 24h or already started but not ended more than 2h ago
 function isRelevant(w: Workshop): boolean {
   const now = Date.now();
   const starts = new Date(w.startsAt).getTime();
   const ends = new Date(w.endsAt).getTime();
-  return ends > now && starts <= now + SOON_WINDOW_MS;
+  const effectiveEnd = ends > starts ? ends : starts + 4 * 60 * 60 * 1000; // fallback 4h after start if endsAt invalid
+  return effectiveEnd > now - 2 * 60 * 60 * 1000 && starts <= now + 24 * 60 * 60 * 1000;
 }
 
 export default function WorkshopSelectPage({ auth, onLogout }: Props) {
@@ -31,6 +31,8 @@ export default function WorkshopSelectPage({ auth, onLogout }: Props) {
   const [loading, setLoading] = useState(true);
   const [preloading, setPreloading] = useState<string | null>(null);
   const [preloadedIds, setPreloadedIds] = useState<Set<string>>(new Set());
+  const [checkinCounts, setCheckinCounts] = useState<Record<string, number>>({});
+  const [rosterSizes, setRosterSizes] = useState<Record<string, number>>({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -58,7 +60,10 @@ export default function WorkshopSelectPage({ auth, onLogout }: Props) {
       const roster = await getRoster(w.id);
       if (roster) {
         setPreloadedIds((prev) => new Set(prev).add(w.id));
+        setRosterSizes((prev) => ({ ...prev, [w.id]: roster.roster.length }));
       }
+      const count = await getCheckinCount(w.id);
+      setCheckinCounts((prev) => ({ ...prev, [w.id]: count }));
     });
   }, [workshops]);
 
@@ -131,9 +136,15 @@ export default function WorkshopSelectPage({ auth, onLogout }: Props) {
               <small style={{ color: '#666' }}>
                 {w.roomName} &nbsp;|&nbsp; {new Date(w.startsAt).toLocaleString('vi-VN')}
               </small>
+              {rosterSizes[w.id] != null && (
+                <div style={{ marginTop: 6, fontSize: 12, color: '#555' }}>
+                  <span style={{ fontWeight: 600, color: '#34a853' }}>{checkinCounts[w.id] ?? 0}</span>
+                  {' / '}{rosterSizes[w.id]} đã check-in
+                </div>
+              )}
               {isPreviewed && (
                 <span style={{ position: 'absolute', top: 10, right: 12, fontSize: 11, color: '#34a853', fontWeight: 600 }}>
-                  ✓ Sẵn sàng offline
+                  ✓ Offline
                 </span>
               )}
               {isPreloading && (

@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { api, MyRegistration } from '../api/client';
+import StepIndicator from '../components/StepIndicator';
 
-export function PaymentCheckoutPage({
-  registrationId,
-  onSuccess,
-}: {
-  registrationId: string;
-  onSuccess: () => void;
-}) {
+const STEPS = ['Xem lại', 'Thanh toán', 'Hoàn tất'];
+
+export function PaymentCheckoutPage() {
+  const { registrationId } = useParams<{ registrationId: string }>();
+  const navigate = useNavigate();
   const [registration, setRegistration] = useState<MyRegistration | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
+  const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
+    if (!registrationId) return;
     api
       .getMyRegistrations()
       .then((regs) => {
@@ -28,12 +30,14 @@ export function PaymentCheckoutPage({
   }, [registrationId]);
 
   const handlePay = async () => {
+    if (!registrationId) return;
     setPaying(true);
     setMsg('');
     try {
       const idempotencyKey = crypto.randomUUID();
       const intent = await api.createPaymentIntent(registrationId, idempotencyKey);
       setPaymentIntentId(intent.paymentIntentId);
+      setCurrentStep(1);
       setMsg('✅ Thanh toán được khởi tạo. Vui lòng xác nhận thanh toán dưới đây.');
     } catch (e: any) {
       setMsg(`❌ ${e.message}`);
@@ -47,18 +51,16 @@ export function PaymentCheckoutPage({
     setPaying(true);
     setMsg('');
     try {
-      // Call the mock payment endpoint with success
       const response = await fetch(`/api/payments/mock-payment/pay/${paymentIntentId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'success' }),
         credentials: 'include',
       });
-      if (!response.ok) {
-        throw new Error('Payment failed');
-      }
+      if (!response.ok) throw new Error('Payment failed');
       setMsg('✅ Thanh toán thành công!');
-      setTimeout(() => onSuccess(), 1500);
+      setCurrentStep(2);
+      setTimeout(() => navigate('/my-registrations'), 1500);
     } catch (e: any) {
       setMsg(`❌ ${e.message}`);
     } finally {
@@ -67,13 +69,12 @@ export function PaymentCheckoutPage({
   };
 
   if (loading) return <div style={styles.loading}>Đang tải...</div>;
-  if (!registration) {
-    return <div style={styles.loading}>Không tìm thấy đơn đăng ký</div>;
-  }
+  if (!registration) return <div style={styles.loading}>Không tìm thấy đơn đăng ký</div>;
 
   return (
-    <div style={styles.page}>
+    <div className="payment-page" style={styles.page}>
       <div style={styles.card}>
+        <StepIndicator steps={STEPS} currentStep={currentStep} />
         <h2 style={styles.title}>Thanh toán</h2>
 
         <div style={styles.section}>
@@ -94,25 +95,18 @@ export function PaymentCheckoutPage({
           <div style={styles.detail}>
             <span style={styles.label}>Giá:</span>
             <span style={{ fontWeight: 600, color: '#dc2626' }}>
-              {registration.workshop.feeType === 'FREE'
-                ? 'Miễn phí'
-                : 'Tính phí (mock)'}
+              {registration.workshop.feeType === 'FREE' ? 'Miễn phí' : 'Tính phí (mock)'}
             </span>
           </div>
         </div>
 
         {msg && (
-          <div
-            style={{
-              padding: 12,
-              borderRadius: 8,
-              marginBottom: 16,
-              textAlign: 'center',
-              background: msg.startsWith('❌') ? '#fee2e2' : '#dcfce7',
-              color: msg.startsWith('❌') ? '#ef4444' : '#166534',
-              fontWeight: 600,
-            }}
-          >
+          <div style={{
+            padding: 12, borderRadius: 8, marginBottom: 16, textAlign: 'center',
+            background: msg.startsWith('❌') ? '#fee2e2' : '#dcfce7',
+            color: msg.startsWith('❌') ? '#ef4444' : '#166534',
+            fontWeight: 600,
+          }}>
             {msg}
           </div>
         )}
@@ -144,15 +138,10 @@ const styles: Record<string, React.CSSProperties> = {
   detail: { display: 'flex', justifyContent: 'space-between', padding: '8px 0', fontSize: 14 },
   label: { color: '#64748b', fontWeight: 500 },
   btn: {
-    width: '100%',
-    padding: '12px 16px',
+    width: '100%', padding: '12px 16px',
     background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 8,
-    fontSize: 16,
-    fontWeight: 600,
-    cursor: 'pointer',
+    color: '#fff', border: 'none', borderRadius: 8,
+    fontSize: 16, fontWeight: 600, cursor: 'pointer',
   },
   loading: { textAlign: 'center', padding: 80, color: '#64748b' },
 };

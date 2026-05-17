@@ -1,0 +1,90 @@
+/* ===== Student-web Responsive Styles ===== */
+
+/* Nav: reduce padding on mobile, allow wrapping */
+.nav-bar {
+  padding: 0 24px;
+}
+@media (max-width: 768px) {
+  .nav-bar {
+    padding: 0 12px;
+    height: auto !important;
+    min-height: 56px;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .nav-links {
+    gap: 12px !important;
+  }
+  .nav-brand {
+    font-size: 17px !important;
+  }
+  .nav-right {
+    gap: 8px !important;
+  }
+}
+
+/* Layout content container */
+.layout-content {
+  padding: 28px 32px;
+}
+@media (max-width: 768px) {
+  .layout-content {
+    padding: 16px 12px;
+  }
+}
+
+/* Workshop list grid: single column on mobile */
+.ws-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+@media (max-width: 500px) {
+  .ws-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+/* Workshop detail card */
+.detail-card {
+  padding: 32px;
+}
+@media (max-width: 768px) {
+  .detail-card {
+    padding: 20px 16px;
+  }
+}
+
+/* Payment page */
+.payment-page {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+@media (max-width: 500px) {
+  .payment-page {
+    padding: 16px 8px;
+  }
+}
+
+/* My registrations: QR code responsive */
+.qr-img {
+  width: 220px;
+  height: 220px;
+}
+@media (max-width: 400px) {
+  .qr-img {
+    width: 200px !important;
+    height: 200px !important;
+  }
+}
+
+/* Headings: scale down on mobile */
+@media (max-width: 500px) {
+  h1, .page-heading {
+    font-size: 20px !important;
+  }
+}

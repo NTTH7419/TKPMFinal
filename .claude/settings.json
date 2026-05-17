@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter api test)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm build *)",
+      "Bash(pnpm --filter student-web build)",
+      "Bash(pnpm --filter student-web test)"
+    ]
+  }
+}

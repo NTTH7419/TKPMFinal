@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api, MyRegistration } from '../api/client';
+import { Skeleton } from '@unihub/ui';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('vi-VN', { dateStyle: 'medium', timeStyle: 'short' });
@@ -16,9 +17,11 @@ function statusLabel(status: string) {
   return map[status] ?? { label: status, color: '#64748b' };
 }
 
-function QrModal({ registrationId, onClose }: { registrationId: string; onClose: () => void }) {
+function QrModal({ registrationId, workshopTitle, onClose }: { registrationId: string; workshopTitle: string; onClose: () => void }) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     api.getQrCode(registrationId)
@@ -26,18 +29,58 @@ function QrModal({ registrationId, onClose }: { registrationId: string; onClose:
       .catch((e) => setError(e.message));
   }, [registrationId]);
 
+  const handleFullscreen = () => {
+    const el = imgRef.current;
+    if (!el) return;
+    if (el.requestFullscreen) {
+      el.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => setIsFullscreen(true));
+    } else {
+      setIsFullscreen(true);
+    }
+  };
+
+  const handleExitFullscreen = () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    setIsFullscreen(false);
+  };
+
+  const handleSave = () => {
+    if (!qrDataUrl) return;
+    const a = document.createElement('a');
+    a.href = qrDataUrl;
+    a.download = `qr-${workshopTitle.replace(/\s+/g, '-').toLowerCase()}.png`;
+    a.click();
+  };
+
   return (
-    <div style={s.overlay} onClick={onClose}>
-      <div style={s.modal} onClick={(e) => e.stopPropagation()}>
-        <h3 style={s.modalTitle}>Mã QR tham dự</h3>
-        {error && <p style={{ color: '#ef4444', textAlign: 'center' }}>{error}</p>}
-        {!error && !qrDataUrl && <p style={{ color: '#64748b', textAlign: 'center' }}>Đang tải...</p>}
-        {qrDataUrl && (
-          <img src={qrDataUrl} alt="QR Code" style={{ display: 'block', margin: '0 auto', borderRadius: 8 }} />
-        )}
-        <button style={s.closeBtn} onClick={onClose}>Đóng</button>
+    <>
+      {isFullscreen && (
+        <div
+          style={{ position: 'fixed', inset: 0, background: '#fff', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}
+          onClick={handleExitFullscreen}
+        >
+          {qrDataUrl && <img src={qrDataUrl} alt="QR Code" style={{ width: '90vmin', height: '90vmin', objectFit: 'contain' }} />}
+          <p style={{ color: '#94a3b8', fontSize: 13 }}>Nhấn bất kỳ để đóng</p>
+        </div>
+      )}
+      <div style={s.overlay} onClick={onClose}>
+        <div style={s.modal} onClick={(e) => e.stopPropagation()}>
+          <h3 style={s.modalTitle}>Mã QR tham dự</h3>
+          {error && <p style={{ color: '#ef4444', textAlign: 'center' }}>{error}</p>}
+          {!error && !qrDataUrl && <p style={{ color: '#64748b', textAlign: 'center' }}>Đang tải...</p>}
+          {qrDataUrl && (
+            <img ref={imgRef} src={qrDataUrl} alt="QR Code" className="qr-img" style={{ display: 'block', margin: '0 auto', borderRadius: 8, cursor: 'pointer' }} onClick={handleFullscreen} />
+          )}
+          {qrDataUrl && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button style={{ ...s.closeBtn, flex: 1, background: '#6366f1', color: '#fff' }} onClick={handleFullscreen}>⛶ Toàn màn hình</button>
+              <button style={{ ...s.closeBtn, flex: 1 }} onClick={handleSave}>↓ Lưu QR</button>
+            </div>
+          )}
+          <button style={s.closeBtn} onClick={onClose}>Đóng</button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -54,7 +97,24 @@ export function MyRegistrationsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={s.center}>Đang tải...</div>;
+  if (loading) return (
+    <div>
+      <div style={{ marginBottom: 20 }}><Skeleton width={180} height={24} /></div>
+      <div style={s.list}>
+        {[1, 2, 3].map(i => (
+          <div key={i} style={{ background: '#fff', borderRadius: 14, padding: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+              <Skeleton width="55%" height={18} />
+              <Skeleton width={90} height={22} borderRadius={20} />
+            </div>
+            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' as const }}>
+              {[140, 120, 160, 80].map((w, j) => <Skeleton key={j} width={w} height={13} />)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   if (error) return <div style={{ ...s.center, color: '#ef4444' }}>{error}</div>;
   if (registrations.length === 0) {
     return <div style={s.center}>Bạn chưa đăng ký workshop nào.</div>;
@@ -94,7 +154,11 @@ export function MyRegistrationsPage() {
       </div>
 
       {qrForId && (
-        <QrModal registrationId={qrForId} onClose={() => setQrForId(null)} />
+        <QrModal
+          registrationId={qrForId}
+          workshopTitle={registrations.find(r => r.id === qrForId)?.workshop.title ?? ''}
+          onClose={() => setQrForId(null)}
+        />
       )}
     </div>
   );

@@ -32,6 +32,9 @@ importers:
       '@unihub/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@unihub/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -254,6 +257,9 @@ importers:
       '@unihub/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@unihub/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -282,6 +288,25 @@ importers:
 
   packages/shared:
     devDependencies:
+      typescript:
+        specifier: ^5.4.5
+        version: 5.9.3
+
+  packages/ui:
+    dependencies:
+      react:
+        specifier: '>=18.0.0'
+        version: 18.3.1
+      react-dom:
+        specifier: '>=18.0.0'
+        version: 18.3.1(react@18.3.1)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.3.3
+        version: 18.3.28
+      '@types/react-dom':
+        specifier: ^18.3.0
+        version: 18.3.7(@types/react@18.3.28)
       typescript:
         specifier: ^5.4.5
         version: 5.9.3

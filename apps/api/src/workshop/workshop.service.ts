@@ -230,6 +230,27 @@ export class WorkshopService {
     );
   }
 
+  async getRegistrations(workshopId: string) {
+    await this.findOneOrThrow(workshopId);
+    const registrations = await this.prisma.registration.findMany({
+      where: { workshopId },
+      include: {
+        student: { select: { id: true, fullName: true, email: true, studentCode: true } },
+        checkinEvents: { where: { status: 'ACCEPTED' }, select: { id: true }, take: 1 },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    return {
+      data: registrations.map(r => ({
+        id: r.id,
+        status: r.status,
+        createdAt: r.createdAt,
+        checkedIn: r.checkinEvents.length > 0,
+        student: r.student,
+      })),
+    };
+  }
+
   private async findOneOrThrow(id: string) {
     const workshop = await this.prisma.workshop.findUnique({ where: { id } });
     if (!workshop) throw new NotFoundException('Workshop not found');

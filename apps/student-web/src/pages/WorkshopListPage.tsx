@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getWorkshops, WorkshopSummary } from '../api/client';
 import { useSeatStream } from '../hooks/useSeatStream';
+import { Skeleton } from '@unihub/ui';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('vi-VN', {
@@ -30,10 +32,11 @@ function SeatBadge({ workshopId, initialRemaining }: { workshopId: string; initi
   );
 }
 
-export function WorkshopListPage({ onSelect }: { onSelect: (id: string) => void }) {
+export function WorkshopListPage() {
   const [workshops, setWorkshops] = useState<WorkshopSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     getWorkshops()
@@ -42,17 +45,35 @@ export function WorkshopListPage({ onSelect }: { onSelect: (id: string) => void 
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={styles.loading}>Đang tải danh sách workshop...</div>;
+  if (loading) return (
+    <div style={styles.page}>
+      <div style={{ marginBottom: 24 }}><Skeleton width={400} height={32} /></div>
+      <div className="ws-grid" style={styles.grid}>
+        {[1, 2, 3].map(i => (
+          <div key={i} style={{ background: '#fff', borderRadius: 12, padding: 20, border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <Skeleton width="60%" height={18} />
+              <Skeleton width={80} height={22} borderRadius={12} />
+            </div>
+            <div style={{ marginBottom: 4 }}><Skeleton width="50%" height={14} /></div>
+            <div style={{ marginBottom: 4 }}><Skeleton width="40%" height={13} /></div>
+            <div style={{ marginBottom: 4 }}><Skeleton width="45%" height={13} /></div>
+            <div style={{ marginTop: 10 }}><Skeleton width={80} height={14} /></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   if (error) return <div style={styles.error}>Lỗi: {error}</div>;
 
   return (
     <div style={styles.page}>
       <h1 style={styles.heading}>🎓 Workshop Tuần lễ Kỹ năng & Nghề nghiệp</h1>
-      <div style={styles.grid}>
+      <div className="ws-grid" style={styles.grid}>
         {workshops.map((w) => {
           const remaining = w.capacity - w.confirmedCount - w.heldCount;
           return (
-            <div key={w.id} style={styles.card} onClick={() => onSelect(w.id)}>
+            <div key={w.id} style={styles.card} onClick={() => navigate(`/workshops/${w.id}`)}>
               <div style={styles.cardHeader}>
                 <h2 style={styles.cardTitle}>{w.title}</h2>
                 <SeatBadge workshopId={w.id} initialRemaining={remaining} />

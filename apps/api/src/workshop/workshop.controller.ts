@@ -137,4 +137,13 @@ export class WorkshopController {
   getStats(@Param('id') id: string) {
     return this.workshopService.getStats(id);
   }
+
+  // GET /admin/workshops/:id/registrations
+  @Get('admin/workshops/:id/registrations')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ORGANIZER, Role.ADMIN)
+  @RateLimit(RateLimitTier.ADMIN)
+  getRegistrations(@Param('id') id: string) {
+    return this.workshopService.getRegistrations(id);
+  }
 }

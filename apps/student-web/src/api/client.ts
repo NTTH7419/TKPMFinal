@@ -1,5 +1,12 @@
 const API_BASE = '/api';
 
+function handleUnauthorized(path: string) {
+  if (path === '/auth/login') return false;
+  localStorage.clear();
+  window.location.href = '/login';
+  return true;
+}
+
 export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem('access_token');
   const res = await fetch(`${API_BASE}${path}`, {
@@ -11,6 +18,9 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
     },
     credentials: 'include',
   });
+  if (res.status === 401 && handleUnauthorized(path)) {
+    throw new Error('Phiên đăng nhập hết hạn');
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(err.message || 'API error');
@@ -29,6 +39,9 @@ export async function apiFetchText(path: string, options?: RequestInit): Promise
     },
     credentials: 'include',
   });
+  if (res.status === 401 && handleUnauthorized(path)) {
+    throw new Error('Phiên đăng nhập hết hạn');
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(err.message || 'API error');

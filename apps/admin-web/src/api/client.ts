@@ -13,6 +13,11 @@ export async function apiFetch<T>(path: string, options?: RequestInit): Promise<
     },
     credentials: 'include',
   });
+  if (res.status === 401 && path !== '/auth/login') {
+    localStorage.clear();
+    window.location.href = '/login';
+    throw new Error('Phiên đăng nhập hết hạn');
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }));
     throw new Error(err.message || 'API error');
@@ -30,6 +35,14 @@ export interface Workshop {
 export interface WorkshopStats {
   totalRegistrations: number; confirmedCount: number;
   pendingPaymentCount: number; checkinCount: number; utilizationPct: number;
+}
+
+export interface Attendee {
+  id: string;
+  status: string;
+  student: { id: string; fullName: string; email: string; studentCode: string };
+  checkedIn: boolean;
+  createdAt: string;
 }
 
 export interface SummaryStatus {
@@ -107,6 +120,9 @@ export const api = {
       `/admin/workshops/${workshopId}/summary`,
       { method: 'PATCH', body: JSON.stringify({ aiSummary }) },
     ),
+
+  getAttendees: (workshopId: string) =>
+    apiFetch<{ data: Attendee[] }>(`/admin/workshops/${workshopId}/registrations`),
 
   getImportBatches: (page = 1) =>
     apiFetch<{ data: ImportBatch[]; total: number; page: number; limit: number }>(
