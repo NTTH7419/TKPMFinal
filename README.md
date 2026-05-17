@@ -160,13 +160,135 @@ Chi tiết: [`packages/ui/README.md`](packages/ui/README.md)
 
 ## Supabase Setup
 
-1. Create a new Supabase project at [supabase.com](https://supabase.com).
-2. Copy the **Connection Pooling URL** from Project Settings → Database → Connection string → URI → set as `DATABASE_URL`.
-3. Copy **Project URL** and **anon key** from Project Settings → API.
-4. Create the following Storage buckets (all **private**):
-   - `workshop-docs` — PDF uploads by organizers
-   - `student-imports` — CSV files from legacy system
-   - `qr-codes` — QR images generated after registration confirmed
+### Step 1: Create Supabase Project
+1. Go to [supabase.com](https://supabase.com) and sign up / log in
+2. Click **"New Project"** and fill in:
+   - **Name:** UniHub Workshop (or any name)
+   - **Database Password:** Generate strong password (save it!)
+   - **Region:** Choose closest to your location (Singapore recommended for Vietnam)
+3. Wait for project creation (~1-2 minutes)
+
+### Step 2: Get Database Connection URL
+1. Go to **Project Settings** → **Database**
+2. Under **Connection string**, select **"Connection pooling"** (recommended)
+3. Copy the full URL (it looks like: `postgresql://postgres.xxxxx:[PASSWORD]@db.xxxxx.supabase.co:6543/postgres`)
+4. **Replace `[PASSWORD]`** with the password you created in Step 1
+5. Set this as `DATABASE_URL` in `apps/api/.env`:
+   ```env
+   DATABASE_URL=postgresql://postgres.xxxxx:[PASSWORD]@db.xxxxx.supabase.co:6543/postgres
+   ```
+
+### Step 3: Get API Keys
+1. Go to **Project Settings** → **API**
+2. Copy the values:
+   - **Project URL** → set as `SUPABASE_URL`
+   - **anon public key** → set as `SUPABASE_ANON_KEY`
+   ```env
+   SUPABASE_URL=https://xxxxx.supabase.co
+   SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+   ```
+
+### Step 4: Initialize Database Schema
+Run migrations to create all tables:
+```bash
+cd apps/api
+npx prisma migrate deploy
+```
+
+If this is your **first time**, use:
+```bash
+npx prisma migrate dev
+```
+This will:
+- Create all tables based on `schema.prisma`
+- Run migrations in `prisma/migrations/`
+- Seed demo data automatically (if `prisma.seed` is configured)
+
+### Step 5: Seed Initial Data
+```bash
+pnpm --filter api run db:seed
+```
+
+#### Seed Strategy: Independent Data Only
+
+The seed script follows a **data isolation pattern** — it seeds only **independent entities**. Relational data (registrations, payments, check-in events, notifications) are **NOT seeded** because:
+
+1. **Avoiding data coupling:** Different test scenarios require different relationships
+2. **Clean user testing:** When users register, they create their own registrations without conflicts from pre-seeded data
+3. **Realistic workflow:** Students auto-link to User accounts when they register with matching email (not seeded)
+
+#### What Gets Seeded
+
+**Roles & Non-Student Users:**
+- `STUDENT`, `ORGANIZER`, `CHECKIN_STAFF`, `ADMIN` roles
+- 4 non-student users: admin, organizer, staff (×2)
+  - **Admin:** `admin@unihub.edu.vn` / `Admin@123456`
+  - **Organizer:** `organizer@unihub.edu.vn` / `Organizer@123`
+  - **Staff:** `staff@unihub.edu.vn` / `Staff@123`
+
+**Student Records (Import Batch):**
+- 7 independent Student records with unique emails:
+  - `SE123456` / `student1@unihub.edu.vn` — Nguyễn Văn A
+  - `SE123457` / `student2@unihub.edu.vn` — Trần Thị B
+  - ... (5 more)
+- **Students are NOT linked to User accounts** — they auto-link when they register via email matching
+
+**Workshops:**
+- 7 independent workshops with various states:
+  - 4 OPEN (FREE + PAID)
+  - 1 DRAFT
+  - 1 CLOSED (past event)
+  - 1 CANCELLED
+
+**Student Import Batch:**
+- 1 batch with 9 rows: 7 VALID + 1 ERROR + 1 DUPLICATE (for testing import flow)
+
+#### Test Workflow
+
+To test the full registration flow:
+
+1. **Register as a student** using one of the seeded student emails:
+   ```
+   Email: student1@unihub.edu.vn
+   Password: any password you choose
+   ```
+   This automatically:
+   - Creates a new User account
+   - Links to the seeded Student record (via `auth.service.ts`)
+   - Assigns STUDENT role
+   - Allows registration for workshops
+
+2. **Then test registration flow** (FREE or PAID workshops)
+3. **Admins can check imports** — see the batch with 9 rows including validation errors
+
+### Step 6: Create Storage Buckets
+1. Go to **Storage** in Supabase dashboard
+2. Create the following buckets (all **private**):
+   - **`workshop-docs`** — PDF uploads by organizers for AI summary
+   - **`student-imports`** — CSV files imported from legacy system
+   - **`qr-codes`** — QR code images generated after registration confirmed
+
+For each bucket:
+- Click **New bucket**
+- Set name (e.g., `workshop-docs`)
+- Toggle **"Private"** (ensure it's private, not public)
+- Click **Create bucket**
+
+### Verify Setup
+After migration and seeding, verify everything is correct:
+```bash
+# Check if all tables exist
+npx prisma studio
+
+# This opens interactive UI at http://localhost:5555
+# Browse through: Users, Students, Workshops, Registrations, Payments, etc.
+```
+
+**Demo Accounts to test with:**
+- **Admin:** `admin@unihub.edu.vn` / `Admin@123456`
+- **Organizer:** `organizer@unihub.edu.vn` / `Organizer@123`
+- **Staff:** `staff@unihub.edu.vn` / `Staff@123`
+- **Student:** `student@unihub.edu.vn` / `Student@123` (linked to SE123456)
 
 ## Documentation
 

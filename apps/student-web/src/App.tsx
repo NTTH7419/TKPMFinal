@@ -6,6 +6,7 @@ import { WorkshopListPage } from './pages/WorkshopListPage';
 import { WorkshopDetailPage } from './pages/WorkshopDetailPage';
 import { MyRegistrationsPage } from './pages/MyRegistrationsPage';
 import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 import { PaymentCheckoutPage } from './pages/PaymentCheckoutPage';
 import NotificationBell from './components/NotificationBell';
 
@@ -125,7 +126,7 @@ function Layout() {
         <Routes>
           <Route path="/workshops" element={<WorkshopListPage />} />
           <Route path="/workshops/:id" element={<WorkshopDetailPage />} />
-          <Route path="/my-registrations" element={<MyRegistrationsPage />} />
+          <Route path="/my-registrations" element={<MyRegistrationsPage key={user?.id} />} />
           <Route path="/payment/:registrationId" element={<PaymentCheckoutPage />} />
           <Route path="*" element={<Navigate to="/workshops" replace />} />
         </Routes>
@@ -138,6 +139,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route
         path="/*"
         element={

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { api, MyRegistration } from '../api/client';
 import { Skeleton } from '@unihub/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faBuilding, faClock, faMoneyBillWave, faExpand, faDownload, faSpinner, faCalendarXmark } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faBuilding, faClock, faMoneyBillWave, faExpand, faDownload, faSpinner, faCalendarXmark, faCheckCircle, faHourglass, faTimesCircle, faBan, faMagnifyingGlass, faQrcode, faCreditCard, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 
 function formatDate(iso: string) {
@@ -10,14 +10,14 @@ function formatDate(iso: string) {
 }
 
 function statusLabel(status: string) {
-  const map: Record<string, { label: string; color: string }> = {
-    CONFIRMED: { label: 'Đã xác nhận', color: '#22c55e' },
-    PENDING_PAYMENT: { label: 'Chờ thanh toán', color: '#f59e0b' },
-    EXPIRED: { label: 'Đã hết hạn', color: '#94a3b8' },
-    CANCELLED: { label: 'Đã huỷ', color: '#ef4444' },
-    NEEDS_REVIEW: { label: 'Cần xem xét', color: '#8b5cf6' },
+  const map: Record<string, { label: string; color: string; bg: string; icon: typeof faCheckCircle }> = {
+    CONFIRMED:       { label: 'Đã xác nhận',    color: '#16a34a', bg: '#f0fdf4', icon: faCheckCircle },
+    PENDING_PAYMENT: { label: 'Chờ thanh toán', color: '#d97706', bg: '#fffbeb', icon: faHourglass },
+    EXPIRED:         { label: 'Đã hết hạn',     color: '#64748b', bg: '#f8fafc', icon: faTimesCircle },
+    CANCELLED:       { label: 'Đã huỷ',         color: '#dc2626', bg: '#fef2f2', icon: faBan },
+    NEEDS_REVIEW:    { label: 'Cần xem xét',    color: '#7c3aed', bg: '#f5f3ff', icon: faMagnifyingGlass },
   };
-  return map[status] ?? { label: status, color: '#64748b' };
+  return map[status] ?? { label: status, color: '#64748b', bg: '#f8fafc', icon: faCheckCircle };
 }
 
 function QrModal({ registrationId, workshopTitle, onClose }: { registrationId: string; workshopTitle: string; onClose: () => void }) {
@@ -142,31 +142,61 @@ export function MyRegistrationsPage() {
 
   return (
     <div>
-      <h2 style={s.heading}>Đăng ký của tôi</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <h2 style={s.heading}>Đăng ký của tôi</h2>
+        <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>{registrations.length} workshop</span>
+      </div>
       <div style={s.list}>
         {registrations.map((reg) => {
           const st = statusLabel(reg.status);
           return (
-            <div key={reg.id} style={s.card}>
+            <div key={reg.id} style={{ ...s.card, borderLeft: `4px solid ${st.color}` }}>
+              {/* Header: title + status badge */}
               <div style={s.cardHeader}>
                 <span style={s.title}>{reg.workshop.title}</span>
-                <span style={{ ...s.badge, background: st.color }}>{st.label}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 600, color: st.color, background: st.bg, padding: '4px 10px', borderRadius: 20, whiteSpace: 'nowrap' as const }}>
+                  <FontAwesomeIcon icon={st.icon} />
+                  {st.label}
+                </span>
               </div>
+
+              {/* Meta info */}
               <div style={s.meta}>
-                <span><FontAwesomeIcon icon={faUser} style={{ marginRight: 5 }} />{reg.workshop.speakerName}</span>
-                <span><FontAwesomeIcon icon={faBuilding} style={{ marginRight: 5 }} />{reg.workshop.roomName}</span>
-                <span><FontAwesomeIcon icon={faClock} style={{ marginRight: 5 }} />{formatDate(reg.workshop.startsAt)}</span>
-                <span><FontAwesomeIcon icon={faMoneyBillWave} style={{ marginRight: 5 }} />{reg.workshop.feeType === 'FREE' ? 'Miễn phí' : 'Có phí'}</span>
+                <span><FontAwesomeIcon icon={faUser} style={{ marginRight: 5, color: '#6366f1' }} />{reg.workshop.speakerName}</span>
+                <span><FontAwesomeIcon icon={faBuilding} style={{ marginRight: 5, color: '#6366f1' }} />{reg.workshop.roomName}</span>
+                <span><FontAwesomeIcon icon={faClock} style={{ marginRight: 5, color: '#6366f1' }} />{formatDate(reg.workshop.startsAt)}</span>
+                <span><FontAwesomeIcon icon={faMoneyBillWave} style={{ marginRight: 5, color: '#6366f1' }} />{reg.workshop.feeType === 'FREE' ? 'Miễn phí' : 'Có phí'}</span>
               </div>
+
+              {/* Pending payment warning */}
               {reg.status === 'PENDING_PAYMENT' && reg.holdExpiresAt && (
-                <p style={s.warning}>
-                  Hết hạn giữ chỗ lúc: {formatDate(reg.holdExpiresAt)}
-                </p>
+                <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 10 }}>
+                  <p style={{ ...s.warning, margin: 0 }}>
+                    <FontAwesomeIcon icon={faHourglass} style={{ marginRight: 6 }} />
+                    Hết hạn giữ chỗ lúc: {formatDate(reg.holdExpiresAt)}
+                  </p>
+                  <button
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                    onClick={() => navigate(`/payment/${reg.id}`)}
+                  >
+                    <FontAwesomeIcon icon={faCreditCard} />
+                    Thanh toán ngay
+                    <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: 11 }} />
+                  </button>
+                </div>
               )}
+
+              {/* QR button for confirmed */}
               {reg.status === 'CONFIRMED' && (
-                <button style={s.qrBtn} onClick={() => setQrForId(reg.id)}>
-                  Xem mã QR tham dự
-                </button>
+                <div style={{ marginTop: 14 }}>
+                  <button
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+                    onClick={() => setQrForId(reg.id)}
+                  >
+                    <FontAwesomeIcon icon={faQrcode} />
+                    Xem mã QR tham dự
+                  </button>
+                </div>
               )}
             </div>
           );

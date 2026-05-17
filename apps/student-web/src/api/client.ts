@@ -112,6 +112,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
+  register: (email: string, password: string, fullName: string) =>
+    apiFetch<any>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, fullName }),
+    }),
   registerWorkshop: (workshopId: string, idempotencyKey: string) =>
     apiFetch<{ id: string; status: string; qrTokenHash?: string }>('/registrations', {
       method: 'POST',

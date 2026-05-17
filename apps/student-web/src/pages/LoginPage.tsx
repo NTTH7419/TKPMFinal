@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGraduationCap, faEnvelope, faLock, faRightToBracket, faSpinner, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import { api } from '../api/client';
@@ -17,6 +17,7 @@ export function LoginPage() {
     setError('');
     try {
       const res = await api.login(email, password);
+      localStorage.clear();
       localStorage.setItem('access_token', res.accessToken);
       localStorage.setItem('user', JSON.stringify(res.user));
       navigate('/workshops', { replace: true });
@@ -161,9 +162,17 @@ export function LoginPage() {
             </button>
           </form>
 
+          {/* Register link */}
+          <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: '#64748b' }}>
+            Chưa có tài khoản?{' '}
+            <Link to="/register" style={{ color: '#6366f1', fontWeight: 600, textDecoration: 'none' }}>
+              Đăng ký ngay
+            </Link>
+          </p>
+
           {/* Demo hint */}
           <div style={{
-            marginTop: 24, padding: '12px 14px',
+            marginTop: 12, padding: '12px 14px',
             background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0',
             fontSize: 12, color: '#64748b', lineHeight: 1.7,
           }}>
