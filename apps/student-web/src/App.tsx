@@ -1,5 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, Link } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faGraduationCap, faChevronDown, faRightFromBracket } from '@fortawesome/free-solid-svg-icons';
 import { WorkshopListPage } from './pages/WorkshopListPage';
 import { WorkshopDetailPage } from './pages/WorkshopDetailPage';
 import { MyRegistrationsPage } from './pages/MyRegistrationsPage';
@@ -28,35 +30,98 @@ function Layout() {
   const isWorkshops = location.pathname.startsWith('/workshops');
   const isMyReg = location.pathname === '/my-registrations';
 
-  const navLinkStyle = (active: boolean): React.CSSProperties => ({
-    color: active ? '#fff' : '#bfdbfe',
-    fontWeight: active ? 700 : 400,
-    fontSize: 14,
-    cursor: 'pointer',
-    padding: '4px 2px',
-    borderBottom: active ? '2px solid #fff' : '2px solid transparent',
-    textDecoration: 'none',
-  });
-
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'Inter, system-ui, sans-serif' }}>
-      <nav className="nav-bar" style={{ background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 60, flexWrap: 'wrap', gap: 8 }}>
-        <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <Link className="nav-brand" to="/workshops" style={{ color: '#fff', fontWeight: 700, fontSize: 20, textDecoration: 'none' }}>
-            UniHub Student
+      <nav style={{
+        background: '#fff',
+        borderBottom: '1px solid #e2e8f0',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        height: 64, padding: '0 32px',
+      }}>
+        {/* Left: brand + nav links */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Link to="/workshops" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', marginRight: 16 }}>
+            <span style={{
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              borderRadius: 10, width: 34, height: 34,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: 16, flexShrink: 0,
+            }}>
+              <FontAwesomeIcon icon={faGraduationCap} />
+            </span>
+            <span style={{ fontWeight: 700, fontSize: 17, color: '#1e293b', letterSpacing: '-0.3px' }}>
+              UniHub <span style={{ color: '#6366f1' }}>Student</span>
+            </span>
           </Link>
-          <Link to="/workshops" style={navLinkStyle(isWorkshops)}>Workshop</Link>
-          <Link to="/my-registrations" style={navLinkStyle(isMyReg)}>Đăng ký của tôi</Link>
+
+          {/* Divider */}
+          <div style={{ width: 1, height: 24, background: '#e2e8f0', marginRight: 8 }} />
+
+          {[
+            { to: '/workshops', label: 'Workshop', active: isWorkshops },
+            { to: '/my-registrations', label: 'Đăng ký của tôi', active: isMyReg },
+          ].map(({ to, label, active }) => (
+            <Link
+              key={to}
+              to={to}
+              style={{
+                position: 'relative',
+                textDecoration: 'none',
+                fontSize: 14,
+                fontWeight: active ? 600 : 400,
+                color: active ? '#6366f1' : '#64748b',
+                padding: '4px 12px',
+                borderRadius: 8,
+                background: active ? '#f0f0ff' : 'transparent',
+                transition: 'all 0.15s',
+              }}
+            >
+              {label}
+            </Link>
+          ))}
         </div>
-        <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+
+        {/* Right: bell + user */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <NotificationBell />
-          {user && <span style={{ color: '#eff6ff', fontSize: 14 }}>{user.fullName}</span>}
-          <button onClick={logout} style={{ background: 'none', border: '1px solid #93c5fd', color: '#fff', padding: '4px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}>
+          {user && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '6px 12px', borderRadius: 8,
+              border: '1px solid #e2e8f0', cursor: 'pointer',
+            }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', fontSize: 12, fontWeight: 700, flexShrink: 0,
+              }}>
+                {user.fullName?.[0]?.toUpperCase() ?? 'U'}
+              </div>
+              <span style={{ fontSize: 13, fontWeight: 500, color: '#334155', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {user.fullName}
+              </span>
+              <FontAwesomeIcon icon={faChevronDown} style={{ fontSize: 10, color: '#94a3b8' }} />
+            </div>
+          )}
+          <button
+            onClick={logout}
+            title="Đăng xuất"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'none', border: '1px solid #e2e8f0',
+              color: '#64748b', padding: '6px 12px', borderRadius: 8,
+              cursor: 'pointer', fontSize: 13, fontWeight: 500,
+              transition: 'all 0.15s',
+            }}
+          >
+            <FontAwesomeIcon icon={faRightFromBracket} />
             Đăng xuất
           </button>
         </div>
       </nav>
-      <div className="layout-content" style={{ maxWidth: 1000, margin: '0 auto' }}>
+      <div className="layout-content" style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>
         <Routes>
           <Route path="/workshops" element={<WorkshopListPage />} />
           <Route path="/workshops/:id" element={<WorkshopDetailPage />} />

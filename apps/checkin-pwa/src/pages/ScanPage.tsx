@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faCheck, faTimes, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faCheck, faTimes, faTriangleExclamation, faQrcode, faRightFromBracket, faRotate, faClockRotateLeft, faSignal, faSpinner } from '@fortawesome/free-solid-svg-icons';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import type { AuthState } from '../App';
-import OfflineIndicator from '../components/OfflineIndicator';
 import {
   getRoster,
   saveCheckinEvent,
@@ -309,99 +308,233 @@ export default function ScanPage({ auth, onLogout }: Props) {
     DUPLICATE: '#ff8c00',
   };
 
-  const feedbackOverlay: Record<string, { bg: string; icon: typeof faCheck }> = {
-    success: { bg: 'rgba(52,168,83,0.15)', icon: faCheck },
-    error:   { bg: 'rgba(234,67,53,0.15)', icon: faTimes },
+  const feedbackOverlay: Record<string, { bg: string; icon: typeof faCheck; color: string }> = {
+    success: { bg: 'rgba(52,168,83,0.18)', icon: faCheck, color: '#34a853' },
+    error:   { bg: 'rgba(234,67,53,0.18)', icon: faTimes, color: '#ea4335' },
   };
 
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', padding: 16, position: 'relative' }}>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'Inter, system-ui, sans-serif' }}>
       {/* Feedback flash overlay */}
       {feedbackKind !== 'idle' && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 50,
           background: feedbackOverlay[feedbackKind].bg,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 80, pointerEvents: 'none',
-          transition: 'opacity 0.3s',
-          color: feedbackKind === 'success' ? '#34a853' : '#ea4335',
+          pointerEvents: 'none',
+          color: feedbackOverlay[feedbackKind].color,
         }}>
-          <FontAwesomeIcon icon={feedbackOverlay[feedbackKind].icon} />
+          <div style={{
+            width: 120, height: 120, borderRadius: '50%',
+            background: feedbackKind === 'success' ? '#34a853' : '#ea4335',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 52, color: '#fff',
+            boxShadow: `0 0 48px ${feedbackKind === 'success' ? 'rgba(52,168,83,0.4)' : 'rgba(234,67,53,0.4)'}`,
+          }}>
+            <FontAwesomeIcon icon={feedbackOverlay[feedbackKind].icon} />
+          </div>
         </div>
       )}
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12, gap: 8, flexWrap: 'wrap' }}>
+      <div style={{
+        background: '#fff',
+        borderBottom: '1px solid #e2e8f0',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+        padding: '0 16px',
+        height: 56,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      }}>
         <button
           onClick={() => navigate('/workshops')}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1a73e8', fontSize: 14, padding: 0 }}
-        >
-          <FontAwesomeIcon icon={faArrowLeft} style={{ marginRight: 6 }} />Quay lại
-        </button>
-        <h2 style={{ margin: 0, fontSize: 18, flex: 1 }}>Scan QR Check-in</h2>
-        <button
-          onClick={() => onLogout()}
-          style={{ background: 'none', border: '1px solid #ea4335', color: '#ea4335', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
-        >
-          Đăng xuất
-        </button>
-      </div>
-
-      {/* Offline indicator */}
-      <div style={{ marginBottom: 12 }}>
-        <OfflineIndicator isOnline={isOnline} pendingCount={pendingCount} syncing={syncing} />
-      </div>
-
-      {/* Roster status */}
-      {roster ? (
-        <div style={{ background: '#f0faf4', border: '1px solid #34a853', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>
-          <FontAwesomeIcon icon={faCheck} style={{ marginRight: 6, color: '#34a853' }} />Đã tải {roster.roster.length} đăng ký lúc {new Date(roster.preloadedAt).toLocaleTimeString('vi-VN')}
-        </div>
-      ) : (
-        <div style={{ background: '#fff8e1', border: '1px solid #f9ab00', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 13 }}>
-          <FontAwesomeIcon icon={faTriangleExclamation} style={{ marginRight: 6, color: '#f9ab00' }} />Chưa tải danh sách — các lần scan sẽ được lưu để xem xét (NEEDS_REVIEW)
-        </div>
-      )}
-
-      {/* QR Scanner */}
-      <div id="qr-reader" style={{ width: '100%', marginBottom: 12 }} />
-
-      {/* Scan result message */}
-      {scanResult && (
-        <div style={{
-          background: resultColor[scanResult.status] + '22',
-          border: `1px solid ${resultColor[scanResult.status]}`,
-          borderRadius: 8, padding: '10px 14px', marginBottom: 12,
-          fontWeight: 600, color: resultColor[scanResult.status],
-        }}>
-          <FontAwesomeIcon
-            icon={scanResult.status === 'ACCEPTED' ? faCheck : scanResult.status === 'NEEDS_REVIEW' ? faTriangleExclamation : faTimes}
-            style={{ marginRight: 8 }}
-          />
-          {scanResult.message}
-        </div>
-      )}
-
-      {/* Sync panel */}
-      <div style={{ background: '#f8f9fa', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontSize: 13, flex: 1 }}>
-          {pendingCount > 0 ? `${pendingCount} sự kiện chờ đồng bộ` : 'Không có sự kiện chờ'}
-        </span>
-        <button
-          onClick={doSync}
-          disabled={syncing || pendingCount === 0}
           style={{
-            padding: '6px 14px', borderRadius: 6,
-            background: syncing || pendingCount === 0 ? '#ccc' : '#1a73e8',
-            color: '#fff', border: 'none',
-            cursor: syncing || pendingCount === 0 ? 'not-allowed' : 'pointer',
-            fontSize: 13,
+            display: 'flex', alignItems: 'center', gap: 6,
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: '#1a73e8', fontSize: 14, fontWeight: 500, padding: 0,
           }}
         >
-          {syncing ? 'Đang đồng bộ...' : 'Đồng bộ'}
+          <FontAwesomeIcon icon={faArrowLeft} />Quay lại
+        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{
+            width: 28, height: 28, borderRadius: 8,
+            background: 'linear-gradient(135deg, #1a73e8, #1565c0)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontSize: 13,
+          }}>
+            <FontAwesomeIcon icon={faQrcode} />
+          </span>
+          <span style={{ fontWeight: 700, fontSize: 15, color: '#1e293b' }}>Scan QR Check-in</span>
+        </div>
+        <button
+          onClick={() => onLogout()}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5,
+            background: 'none', border: '1px solid #e2e8f0',
+            color: '#64748b', borderRadius: 7, padding: '5px 10px',
+            cursor: 'pointer', fontSize: 12, fontWeight: 500,
+          }}
+        >
+          <FontAwesomeIcon icon={faRightFromBracket} />Đăng xuất
         </button>
       </div>
-      {syncMsg && <p style={{ fontSize: 12, color: '#666', marginTop: 4, marginBottom: 0 }}>{syncMsg}</p>}
+
+      {/* Content */}
+      <div style={{ maxWidth: 480, margin: '0 auto', padding: '16px 16px 24px' }}>
+
+        {/* Status row */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+          {/* Online/offline pill */}
+          <div style={{
+            flex: 1,
+            display: 'flex', alignItems: 'center', gap: 7,
+            background: '#fff',
+            border: `1.5px solid ${isOnline ? '#34a853' : '#f9ab00'}`,
+            borderRadius: 10, padding: '8px 12px', fontSize: 13,
+          }}>
+            <FontAwesomeIcon
+              icon={syncing ? faSpinner : faSignal}
+              spin={syncing}
+              style={{ color: isOnline ? '#34a853' : '#f9ab00', fontSize: 13 }}
+            />
+            <span style={{ fontWeight: 600, color: '#1e293b' }}>
+              {syncing ? 'Đang đồng bộ...' : isOnline ? 'Online' : 'Offline'}
+            </span>
+            {pendingCount > 0 && !syncing && (
+              <span style={{
+                marginLeft: 'auto',
+                background: '#f9ab00', color: '#fff',
+                borderRadius: 10, padding: '1px 8px', fontSize: 11, fontWeight: 700,
+              }}>
+                {pendingCount} chờ
+              </span>
+            )}
+          </div>
+
+          {/* Roster status pill */}
+          {roster ? (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: '#f0fdf4', border: '1.5px solid #34a853',
+              borderRadius: 10, padding: '8px 12px', fontSize: 12,
+              color: '#16a34a', fontWeight: 500, whiteSpace: 'nowrap',
+            }}>
+              <FontAwesomeIcon icon={faCheck} style={{ fontSize: 11 }} />
+              {roster.roster.length} đăng ký
+            </div>
+          ) : (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: '#fffbeb', border: '1.5px solid #f9ab00',
+              borderRadius: 10, padding: '8px 12px', fontSize: 12,
+              color: '#92400e', fontWeight: 500, whiteSpace: 'nowrap',
+            }}>
+              <FontAwesomeIcon icon={faTriangleExclamation} style={{ fontSize: 11 }} />
+              Chưa tải
+            </div>
+          )}
+        </div>
+
+        {/* Roster warning banner (only if not loaded) */}
+        {!roster && (
+          <div style={{
+            background: '#fffbeb', border: '1px solid #fcd34d',
+            borderRadius: 10, padding: '10px 14px', marginBottom: 12,
+            fontSize: 13, color: '#78350f',
+            display: 'flex', alignItems: 'flex-start', gap: 8,
+          }}>
+            <FontAwesomeIcon icon={faTriangleExclamation} style={{ color: '#f59e0b', marginTop: 1, flexShrink: 0 }} />
+            Chưa tải danh sách đăng ký — các lần scan sẽ được lưu để xem xét
+          </div>
+        )}
+
+        {/* Roster preloaded time */}
+        {roster && (
+          <div style={{
+            background: '#f0fdf4', border: '1px solid #bbf7d0',
+            borderRadius: 10, padding: '8px 12px', marginBottom: 12,
+            fontSize: 12, color: '#15803d',
+            display: 'flex', alignItems: 'center', gap: 7,
+          }}>
+            <FontAwesomeIcon icon={faClockRotateLeft} style={{ fontSize: 11 }} />
+            Đã tải lúc {new Date(roster.preloadedAt).toLocaleTimeString('vi-VN')}
+          </div>
+        )}
+
+        {/* QR Scanner */}
+        <div style={{
+          background: '#fff', borderRadius: 14,
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+          overflow: 'hidden', marginBottom: 12,
+        }}>
+          <div id="qr-reader" style={{ width: '100%' }} />
+        </div>
+
+        {/* Scan result message */}
+        {scanResult && (
+          <div style={{
+            background: resultColor[scanResult.status] + '18',
+            border: `1.5px solid ${resultColor[scanResult.status]}`,
+            borderRadius: 12, padding: '12px 16px', marginBottom: 12,
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: resultColor[scanResult.status],
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontSize: 14, flexShrink: 0,
+            }}>
+              <FontAwesomeIcon
+                icon={scanResult.status === 'ACCEPTED' ? faCheck : scanResult.status === 'NEEDS_REVIEW' ? faTriangleExclamation : faTimes}
+              />
+            </div>
+            <span style={{ fontWeight: 600, fontSize: 14, color: resultColor[scanResult.status] }}>
+              {scanResult.message}
+            </span>
+          </div>
+        )}
+
+        {/* Sync panel */}
+        <div style={{
+          background: '#fff', border: '1px solid #e2e8f0',
+          borderRadius: 12, padding: '12px 16px',
+          display: 'flex', alignItems: 'center', gap: 10,
+          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+        }}>
+          <FontAwesomeIcon
+            icon={syncing ? faSpinner : faRotate}
+            spin={syncing}
+            style={{ color: pendingCount > 0 ? '#1a73e8' : '#94a3b8', fontSize: 15 }}
+          />
+          <span style={{ fontSize: 13, flex: 1, color: pendingCount > 0 ? '#1e293b' : '#94a3b8' }}>
+            {pendingCount > 0 ? `${pendingCount} sự kiện chờ đồng bộ` : 'Không có sự kiện chờ'}
+          </span>
+          <button
+            onClick={doSync}
+            disabled={syncing || pendingCount === 0}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '7px 16px', borderRadius: 8,
+              background: syncing || pendingCount === 0 ? '#f1f5f9' : 'linear-gradient(135deg, #1a73e8, #1565c0)',
+              color: syncing || pendingCount === 0 ? '#94a3b8' : '#fff',
+              border: 'none',
+              cursor: syncing || pendingCount === 0 ? 'not-allowed' : 'pointer',
+              fontSize: 13, fontWeight: 600,
+              boxShadow: syncing || pendingCount === 0 ? 'none' : '0 2px 8px rgba(26,115,232,0.3)',
+            }}
+          >
+            {syncing
+              ? <><FontAwesomeIcon icon={faSpinner} spin />Đang đồng bộ</>
+              : <><FontAwesomeIcon icon={faRotate} />Đồng bộ</>}
+          </button>
+        </div>
+        {syncMsg && (
+          <p style={{ fontSize: 12, color: '#64748b', marginTop: 6, marginBottom: 0, textAlign: 'center' }}>
+            {syncMsg}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

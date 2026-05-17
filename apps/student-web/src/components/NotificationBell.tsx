@@ -72,12 +72,13 @@ export default function NotificationBell() {
         aria-label="Thông báo"
         style={{
           background: 'none',
-          border: 'none',
+          border: '1px solid #e2e8f0',
+          borderRadius: 8,
           cursor: 'pointer',
           position: 'relative',
-          padding: '4px 8px',
-          fontSize: 22,
-          color: '#fff',
+          padding: '6px 10px',
+          fontSize: 18,
+          color: '#475569',
           lineHeight: 1,
         }}
       >
