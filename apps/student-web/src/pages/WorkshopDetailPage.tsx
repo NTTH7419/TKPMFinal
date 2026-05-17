@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Button, Card } from '@unihub/ui/components';
 import { getWorkshop, WorkshopDetail, api } from '../api/client';
 import { useSeatStream } from '../hooks/useSeatStream';
 
@@ -31,7 +32,6 @@ export function WorkshopDetailPage({
     setRegistering(true);
     setMsg('');
     try {
-      // Task 5.5: Get queue token first
       try {
         await api.getQueueToken(workshopId);
       } catch (e) {
@@ -57,82 +57,93 @@ export function WorkshopDetailPage({
     }
   };
 
-  if (loading) return <div style={styles.loading}>Đang tải...</div>;
-  if (!workshop) return <div style={styles.loading}>Không tìm thấy workshop</div>;
+  if (loading) {
+    return <p className="text-center py-section text-slate text-body-md">Đang tải...</p>;
+  }
+  if (!workshop) {
+    return <p className="text-center py-section text-slate text-body-md">Không tìm thấy workshop</p>;
+  }
 
   const remaining = seatData
     ? seatData.remainingSeats
     : workshop.capacity - workshop.confirmedCount - workshop.heldCount;
 
-  return (
-    <div style={styles.page}>
-      <button onClick={onBack} style={styles.back}>← Quay lại</button>
+  const isError = msg.startsWith('❌');
 
-      <div style={styles.card}>
-        <h1 style={styles.title}>{workshop.title}</h1>
-        <div style={styles.meta}>
-          <div style={styles.metaItem}><span>👤</span> {workshop.speakerName}</div>
-          <div style={styles.metaItem}><span>🏛️</span> {workshop.roomName}</div>
-          <div style={styles.metaItem}><span>🕐</span> {formatDate(workshop.startsAt)} – {formatDate(workshop.endsAt)}</div>
-          <div style={styles.metaItem}>
+  return (
+    <div className="max-w-[720px] mx-auto px-md py-xxl">
+      <Button variant="ghost" onClick={onBack} className="mb-lg text-primary px-0">
+        ← Quay lại
+      </Button>
+
+      <Card variant="base">
+        <h1 className="text-heading-3 text-ink mb-lg">{workshop.title}</h1>
+
+        <div className="flex flex-col gap-sm mb-xxl">
+          <div className="flex gap-xs items-center text-body-sm text-slate">
+            <span>👤</span>
+            <span>{workshop.speakerName}</span>
+          </div>
+          <div className="flex gap-xs items-center text-body-sm text-slate">
+            <span>🏛️</span>
+            <span>{workshop.roomName}</span>
+          </div>
+          <div className="flex gap-xs items-center text-body-sm text-slate">
+            <span>🕐</span>
+            <span>{formatDate(workshop.startsAt)} – {formatDate(workshop.endsAt)}</span>
+          </div>
+          <div className="flex gap-xs items-center text-body-sm">
             <span>💺</span>
-            <strong style={{ color: remaining > 0 ? '#22c55e' : '#ef4444' }}>
+            <strong className={remaining > 0 ? 'text-brand-green' : 'text-semantic-error'}>
               {remaining > 0 ? `Còn ${remaining} / ${workshop.capacity} chỗ` : 'Đã hết chỗ'}
             </strong>
           </div>
-          <div style={styles.metaItem}>
+          <div className="flex gap-xs items-center text-body-sm text-slate">
             <span>💰</span>
-            {workshop.feeType === 'FREE'
-              ? 'Miễn phí'
-              : `${Number(workshop.price).toLocaleString('vi-VN')} đ`}
+            <span>
+              {workshop.feeType === 'FREE'
+                ? 'Miễn phí'
+                : `${Number(workshop.price).toLocaleString('vi-VN')} đ`}
+            </span>
           </div>
         </div>
 
         {workshop.aiSummary && (
-          <div style={styles.summary}>
-            <h3>📋 Tóm tắt nội dung</h3>
-            <p>{workshop.aiSummary}</p>
+          <div className="bg-surface rounded-md p-lg mb-xxl">
+            <h3 className="text-body-md-medium text-ink mb-xs">📋 Tóm tắt nội dung</h3>
+            <p className="text-body-sm text-slate">{workshop.aiSummary}</p>
           </div>
         )}
 
         {workshop.roomMapUrl && (
-          <div style={styles.map}>
-            <h3>🗺️ Sơ đồ phòng</h3>
-            <img src={workshop.roomMapUrl} alt="Room map" style={{ maxWidth: '100%', borderRadius: 8 }} />
+          <div className="mb-xxl">
+            <h3 className="text-body-md-medium text-ink mb-xs">🗺️ Sơ đồ phòng</h3>
+            <img src={workshop.roomMapUrl} alt="Room map" className="max-w-full rounded-md" />
           </div>
         )}
 
         {msg && (
-          <div style={{ padding: 12, borderRadius: 8, marginBottom: 16, textAlign: 'center', background: msg.startsWith('❌') ? '#fee2e2' : '#dcfce7', color: msg.startsWith('❌') ? '#ef4444' : '#166534', fontWeight: 600 }}>
+          <div
+            role="status"
+            className={`rounded-md px-md py-sm mb-lg text-center text-body-sm-medium ${
+              isError
+                ? 'bg-card-tint-rose text-semantic-error'
+                : 'bg-card-tint-mint text-brand-green'
+            }`}
+          >
             {msg}
           </div>
         )}
 
-        <button
+        <Button
+          variant="primary"
           onClick={handleRegister}
           disabled={remaining === 0 || registering}
-          style={{ ...styles.registerBtn, opacity: (remaining === 0 || registering) ? 0.5 : 1 }}
+          className="w-full justify-center"
         >
-          {registering ? 'Đang xử lý...' : (remaining > 0 ? 'Đăng ký tham dự' : 'Hết chỗ')}
-        </button>
-      </div>
+          {registering ? 'Đang xử lý...' : remaining > 0 ? 'Đăng ký tham dự' : 'Hết chỗ'}
+        </Button>
+      </Card>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 720, margin: '0 auto', padding: '32px 16px' },
-  back: { background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: 15, marginBottom: 20, padding: 0 },
-  card: { background: '#fff', borderRadius: 16, padding: 32, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' },
-  title: { fontSize: 26, fontWeight: 700, marginBottom: 20, color: '#1e293b' },
-  meta: { display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 },
-  metaItem: { display: 'flex', gap: 8, alignItems: 'center', fontSize: 15, color: '#475569' },
-  summary: { background: '#f8fafc', borderRadius: 10, padding: 20, marginBottom: 24 },
-  map: { marginBottom: 24 },
-  registerBtn: {
-    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    color: '#fff', border: 'none', borderRadius: 10,
-    padding: '14px 32px', fontSize: 16, fontWeight: 600, cursor: 'pointer', width: '100%',
-  },
-  loading: { textAlign: 'center', padding: 80, color: '#64748b' },
-};

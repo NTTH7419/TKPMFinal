@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Button, Card } from '@unihub/ui/components';
 import { api, MyRegistration } from '../api/client';
 
 export function PaymentCheckoutPage({
@@ -47,7 +48,6 @@ export function PaymentCheckoutPage({
     setPaying(true);
     setMsg('');
     try {
-      // Call the mock payment endpoint with success
       const response = await fetch(`/api/payments/mock-payment/pay/${paymentIntentId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -66,93 +66,85 @@ export function PaymentCheckoutPage({
     }
   };
 
-  if (loading) return <div style={styles.loading}>Đang tải...</div>;
+  if (loading) {
+    return <p className="text-center py-section text-slate text-body-md">Đang tải...</p>;
+  }
   if (!registration) {
-    return <div style={styles.loading}>Không tìm thấy đơn đăng ký</div>;
+    return (
+      <p className="text-center py-section text-slate text-body-md">
+        Không tìm thấy đơn đăng ký
+      </p>
+    );
   }
 
-  return (
-    <div style={styles.page}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>Thanh toán</h2>
+  const isError = msg.startsWith('❌');
 
-        <div style={styles.section}>
-          <h3>Chi tiết workshop</h3>
-          <div style={styles.detail}>
-            <span style={styles.label}>Workshop:</span>
-            <span>{registration.workshop.title}</span>
+  return (
+    <div className="max-w-[500px] mx-auto px-md py-xxl">
+      <Card variant="base">
+        <h2 className="text-heading-4 text-ink mb-lg">Thanh toán</h2>
+
+        <div className="mb-lg">
+          <h3 className="text-body-md-medium text-ink mb-sm">Chi tiết workshop</h3>
+          <div className="flex justify-between py-xs border-b border-hairline-soft text-body-sm">
+            <span className="text-slate">Workshop:</span>
+            <span className="text-ink">{registration.workshop.title}</span>
           </div>
-          <div style={styles.detail}>
-            <span style={styles.label}>Ngày giờ:</span>
-            <span>
+          <div className="flex justify-between py-xs border-b border-hairline-soft text-body-sm">
+            <span className="text-slate">Ngày giờ:</span>
+            <span className="text-ink">
               {new Date(registration.workshop.startsAt).toLocaleString('vi-VN', {
                 dateStyle: 'long',
                 timeStyle: 'short',
               })}
             </span>
           </div>
-          <div style={styles.detail}>
-            <span style={styles.label}>Giá:</span>
-            <span style={{ fontWeight: 600, color: '#dc2626' }}>
-              {registration.workshop.feeType === 'FREE'
-                ? 'Miễn phí'
-                : 'Tính phí (mock)'}
+          <div className="flex justify-between py-xs text-body-sm">
+            <span className="text-slate">Giá:</span>
+            <span className="text-semantic-error font-semibold">
+              {registration.workshop.feeType === 'FREE' ? 'Miễn phí' : 'Tính phí (mock)'}
             </span>
           </div>
         </div>
 
         {msg && (
           <div
-            style={{
-              padding: 12,
-              borderRadius: 8,
-              marginBottom: 16,
-              textAlign: 'center',
-              background: msg.startsWith('❌') ? '#fee2e2' : '#dcfce7',
-              color: msg.startsWith('❌') ? '#ef4444' : '#166534',
-              fontWeight: 600,
-            }}
+            role="status"
+            className={`rounded-md px-md py-sm mb-lg text-center text-body-sm-medium ${
+              isError
+                ? 'bg-card-tint-rose text-semantic-error'
+                : 'bg-card-tint-mint text-brand-green'
+            }`}
           >
             {msg}
           </div>
         )}
 
         {!paymentIntentId ? (
-          <button onClick={handlePay} disabled={paying} style={styles.btn}>
+          <Button
+            variant="primary"
+            onClick={handlePay}
+            disabled={paying}
+            className="w-full justify-center"
+          >
             {paying ? 'Đang xử lý...' : 'Tạo yêu cầu thanh toán'}
-          </button>
+          </Button>
         ) : (
-          <div>
-            <p style={{ color: '#64748b', marginBottom: 12, fontSize: 14 }}>
+          <div className="flex flex-col gap-sm">
+            <p className="text-body-sm text-slate">
               ℹ️ Đây là thanh toán mock. Nhấp "Xác nhận thanh toán" để hoàn tất.
             </p>
-            <button onClick={handleMockPayment} disabled={paying} style={styles.btn}>
+            <Button
+              variant="primary"
+              onClick={handleMockPayment}
+              disabled={paying}
+              className="w-full justify-center"
+            >
               {paying ? 'Đang xử lý...' : 'Xác nhận thanh toán'}
-            </button>
+            </Button>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 500, margin: '0 auto', padding: '32px 16px' },
-  card: { background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' },
-  title: { fontSize: 22, fontWeight: 700, marginBottom: 20, color: '#1e293b' },
-  section: { marginBottom: 20 },
-  detail: { display: 'flex', justifyContent: 'space-between', padding: '8px 0', fontSize: 14 },
-  label: { color: '#64748b', fontWeight: 500 },
-  btn: {
-    width: '100%',
-    padding: '12px 16px',
-    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: 8,
-    fontSize: 16,
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  loading: { textAlign: 'center', padding: 80, color: '#64748b' },
-};

@@ -1,19 +1,23 @@
 import { useState, useEffect } from 'react';
+import { Badge, Button, Card } from '@unihub/ui/components';
+import type { BadgeVariant } from '@unihub/ui/components';
 import { api, MyRegistration } from '../api/client';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('vi-VN', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-function statusLabel(status: string) {
-  const map: Record<string, { label: string; color: string }> = {
-    CONFIRMED: { label: 'Đã xác nhận', color: '#22c55e' },
-    PENDING_PAYMENT: { label: 'Chờ thanh toán', color: '#f59e0b' },
-    EXPIRED: { label: 'Đã hết hạn', color: '#94a3b8' },
-    CANCELLED: { label: 'Đã huỷ', color: '#ef4444' },
-    NEEDS_REVIEW: { label: 'Cần xem xét', color: '#8b5cf6' },
+type StatusInfo = { label: string; variant: BadgeVariant | null };
+
+function statusInfo(status: string): StatusInfo {
+  const map: Record<string, StatusInfo> = {
+    CONFIRMED: { label: 'Đã xác nhận', variant: 'tag-green' },
+    PENDING_PAYMENT: { label: 'Chờ thanh toán', variant: 'tag-orange' },
+    EXPIRED: { label: 'Đã hết hạn', variant: 'tag-purple' },
+    CANCELLED: { label: 'Đã huỷ', variant: null },
+    NEEDS_REVIEW: { label: 'Cần xem xét', variant: 'tag-purple' },
   };
-  return map[status] ?? { label: status, color: '#64748b' };
+  return map[status] ?? { label: status, variant: null };
 }
 
 function QrModal({ registrationId, onClose }: { registrationId: string; onClose: () => void }) {
@@ -27,16 +31,23 @@ function QrModal({ registrationId, onClose }: { registrationId: string; onClose:
   }, [registrationId]);
 
   return (
-    <div style={s.overlay} onClick={onClose}>
-      <div style={s.modal} onClick={(e) => e.stopPropagation()}>
-        <h3 style={s.modalTitle}>Mã QR tham dự</h3>
-        {error && <p style={{ color: '#ef4444', textAlign: 'center' }}>{error}</p>}
-        {!error && !qrDataUrl && <p style={{ color: '#64748b', textAlign: 'center' }}>Đang tải...</p>}
-        {qrDataUrl && (
-          <img src={qrDataUrl} alt="QR Code" style={{ display: 'block', margin: '0 auto', borderRadius: 8 }} />
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]"
+      onClick={onClose}
+    >
+      <Card variant="base" className="max-w-[380px] w-[90%]" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-heading-5 text-ink text-center mb-lg">Mã QR tham dự</h3>
+        {error && <p className="text-semantic-error text-center text-body-sm">{error}</p>}
+        {!error && !qrDataUrl && (
+          <p className="text-slate text-center text-body-sm">Đang tải...</p>
         )}
-        <button style={s.closeBtn} onClick={onClose}>Đóng</button>
-      </div>
+        {qrDataUrl && (
+          <img src={qrDataUrl} alt="QR Code" className="block mx-auto rounded-md" />
+        )}
+        <Button variant="secondary" onClick={onClose} className="w-full justify-center mt-lg">
+          Đóng
+        </Button>
+      </Card>
     </div>
   );
 }
@@ -54,41 +65,59 @@ export function MyRegistrationsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={s.center}>Đang tải...</div>;
-  if (error) return <div style={{ ...s.center, color: '#ef4444' }}>{error}</div>;
+  if (loading) {
+    return <p className="text-center py-section text-slate text-body-md">Đang tải...</p>;
+  }
+  if (error) {
+    return <p className="text-center py-section text-semantic-error text-body-md">{error}</p>;
+  }
   if (registrations.length === 0) {
-    return <div style={s.center}>Bạn chưa đăng ký workshop nào.</div>;
+    return (
+      <p className="text-center py-section text-slate text-body-md">
+        Bạn chưa đăng ký workshop nào.
+      </p>
+    );
   }
 
   return (
     <div>
-      <h2 style={s.heading}>Đăng ký của tôi</h2>
-      <div style={s.list}>
+      <h2 className="text-heading-4 text-ink mb-lg">Đăng ký của tôi</h2>
+      <div className="flex flex-col gap-lg">
         {registrations.map((reg) => {
-          const st = statusLabel(reg.status);
+          const st = statusInfo(reg.status);
           return (
-            <div key={reg.id} style={s.card}>
-              <div style={s.cardHeader}>
-                <span style={s.title}>{reg.workshop.title}</span>
-                <span style={{ ...s.badge, background: st.color }}>{st.label}</span>
+            <Card key={reg.id} variant="base">
+              <div className="flex justify-between items-center mb-sm gap-sm flex-wrap">
+                <span className="text-body-md-medium text-ink">{reg.workshop.title}</span>
+                {st.variant ? (
+                  <Badge variant={st.variant}>{st.label}</Badge>
+                ) : (
+                  <span className="text-caption-bold text-stone bg-surface rounded-sm px-xs py-xxs">
+                    {st.label}
+                  </span>
+                )}
               </div>
-              <div style={s.meta}>
+              <div className="flex flex-wrap gap-x-lg gap-y-xs text-body-sm text-slate">
                 <span>👤 {reg.workshop.speakerName}</span>
                 <span>🏛️ {reg.workshop.roomName}</span>
                 <span>🕐 {formatDate(reg.workshop.startsAt)}</span>
                 <span>💰 {reg.workshop.feeType === 'FREE' ? 'Miễn phí' : 'Có phí'}</span>
               </div>
               {reg.status === 'PENDING_PAYMENT' && reg.holdExpiresAt && (
-                <p style={s.warning}>
+                <p className="mt-sm text-caption text-brand-orange bg-card-tint-peach rounded-md px-sm py-xs">
                   Hết hạn giữ chỗ lúc: {formatDate(reg.holdExpiresAt)}
                 </p>
               )}
               {reg.status === 'CONFIRMED' && (
-                <button style={s.qrBtn} onClick={() => setQrForId(reg.id)}>
+                <Button
+                  variant="primary"
+                  onClick={() => setQrForId(reg.id)}
+                  className="mt-sm"
+                >
                   Xem mã QR tham dự
-                </button>
+                </Button>
               )}
-            </div>
+            </Card>
           );
         })}
       </div>
@@ -99,20 +128,3 @@ export function MyRegistrationsPage() {
     </div>
   );
 }
-
-const s: Record<string, React.CSSProperties> = {
-  center: { textAlign: 'center', padding: 60, color: '#64748b', fontSize: 15 },
-  heading: { fontSize: 22, fontWeight: 700, color: '#1e293b', marginBottom: 20 },
-  list: { display: 'flex', flexDirection: 'column', gap: 16 },
-  card: { background: '#fff', borderRadius: 14, padding: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' },
-  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 12, flexWrap: 'wrap' },
-  title: { fontSize: 17, fontWeight: 600, color: '#1e293b' },
-  badge: { fontSize: 12, fontWeight: 600, color: '#fff', padding: '3px 10px', borderRadius: 20, whiteSpace: 'nowrap' },
-  meta: { display: 'flex', flexWrap: 'wrap', gap: '8px 20px', fontSize: 14, color: '#475569' },
-  warning: { marginTop: 12, fontSize: 13, color: '#d97706', background: '#fef3c7', padding: '8px 12px', borderRadius: 8 },
-  qrBtn: { marginTop: 14, background: '#6366f1', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer' },
-  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
-  modal: { background: '#fff', borderRadius: 16, padding: 32, maxWidth: 380, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' },
-  modalTitle: { textAlign: 'center', fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 20 },
-  closeBtn: { display: 'block', width: '100%', marginTop: 20, padding: '10px', background: '#f1f5f9', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', color: '#475569' },
-};

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Badge, Button, Card } from '@unihub/ui/components';
 import { api, Notification } from '../api/client';
 
 const EVENT_LABELS: Record<string, string> = {
@@ -32,11 +33,10 @@ export default function NotificationBell() {
 
   useEffect(() => {
     fetchNotifications();
-    const timer = setInterval(fetchNotifications, 30_000); // poll every 30s
+    const timer = setInterval(fetchNotifications, 30_000);
     return () => clearInterval(timer);
   }, []);
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -64,143 +64,71 @@ export default function NotificationBell() {
   };
 
   return (
-    <div ref={dropdownRef} style={{ position: 'relative' }}>
-      <button
+    <div ref={dropdownRef} className="relative">
+      <Button
+        variant="ghost"
         onClick={handleOpen}
         aria-label="Thông báo"
-        style={{
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          position: 'relative',
-          padding: '4px 8px',
-          fontSize: 22,
-          color: '#fff',
-          lineHeight: 1,
-        }}
+        className="relative text-on-dark text-[22px] leading-none px-xs py-xxs"
       >
         🔔
         {unreadCount > 0 && (
-          <span
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              background: '#ef4444',
-              color: '#fff',
-              borderRadius: '50%',
-              fontSize: 10,
-              fontWeight: 700,
-              minWidth: 16,
-              height: 16,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              lineHeight: 1,
-              padding: '0 3px',
-            }}
+          <Badge
+            variant="purple"
+            className="absolute -top-xxs -right-xxs text-[10px] min-w-[16px] h-[16px] px-[3px] py-0 leading-none"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
+          </Badge>
         )}
-      </button>
+      </Button>
 
       {open && (
-        <div
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: 'calc(100% + 8px)',
-            width: 340,
-            background: '#fff',
-            border: '1px solid #e5e7eb',
-            borderRadius: 10,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-            zIndex: 1000,
-            maxHeight: 480,
-            overflowY: 'auto',
-          }}
+        <Card
+          variant="base"
+          className="absolute right-0 top-[calc(100%+8px)] w-[340px] p-0 max-h-[480px] overflow-y-auto z-[1000]"
         >
-          <div
-            style={{
-              padding: '12px 16px',
-              borderBottom: '1px solid #f3f4f6',
-              fontWeight: 700,
-              fontSize: 14,
-              color: '#111827',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span>Thông báo</span>
+          <div className="px-md py-sm border-b border-hairline flex justify-between items-center">
+            <span className="text-body-sm-medium text-ink">Thông báo</span>
             {unreadCount > 0 && (
-              <span style={{ fontSize: 12, color: '#6b7280', fontWeight: 400 }}>
-                {unreadCount} chưa đọc
-              </span>
+              <span className="text-caption text-steel">{unreadCount} chưa đọc</span>
             )}
           </div>
 
           {loading && notifications.length === 0 ? (
-            <p style={{ textAlign: 'center', padding: 24, color: '#9ca3af', fontSize: 14 }}>
-              Đang tải...
-            </p>
+            <p className="text-center py-lg text-stone text-body-sm">Đang tải...</p>
           ) : notifications.length === 0 ? (
-            <p style={{ textAlign: 'center', padding: 24, color: '#9ca3af', fontSize: 14 }}>
-              Chưa có thông báo
-            </p>
+            <p className="text-center py-lg text-stone text-body-sm">Chưa có thông báo</p>
           ) : (
-            <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+            <ul className="list-none m-0 p-0">
               {notifications.map((n) => (
                 <li
                   key={n.id}
                   onClick={() => !n.isRead && handleMarkRead(n.id)}
-                  style={{
-                    padding: '12px 16px',
-                    borderBottom: '1px solid #f9fafb',
-                    cursor: n.isRead ? 'default' : 'pointer',
-                    background: n.isRead ? '#fff' : '#eff6ff',
-                    transition: 'background 0.15s',
-                  }}
+                  className={`px-md py-sm border-b border-hairline-soft flex gap-xs ${
+                    n.isRead ? 'bg-canvas cursor-default' : 'bg-card-tint-sky cursor-pointer'
+                  }`}
                 >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: 8,
-                    }}
-                  >
-                    {!n.isRead && (
-                      <span
-                        style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          background: '#3b82f6',
-                          flexShrink: 0,
-                          marginTop: 5,
-                        }}
-                      />
+                  {!n.isRead && (
+                    <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-[5px]" />
+                  )}
+                  <div className="flex-1">
+                    <p className={`m-0 text-caption text-ink ${n.isRead ? 'font-normal' : 'font-semibold'}`}>
+                      {EVENT_LABELS[n.eventType] ?? n.eventType}
+                    </p>
+                    {(n.payload as any).workshopTitle && (
+                      <p className="m-0 mt-xxs text-caption text-steel">
+                        {(n.payload as any).workshopTitle}
+                      </p>
                     )}
-                    <div style={{ flex: 1 }}>
-                      <p style={{ margin: 0, fontWeight: n.isRead ? 400 : 600, fontSize: 13, color: '#111827' }}>
-                        {EVENT_LABELS[n.eventType] ?? n.eventType}
-                      </p>
-                      {(n.payload as any).workshopTitle && (
-                        <p style={{ margin: '2px 0 0', fontSize: 12, color: '#6b7280' }}>
-                          {(n.payload as any).workshopTitle}
-                        </p>
-                      )}
-                      <p style={{ margin: '4px 0 0', fontSize: 11, color: '#9ca3af' }}>
-                        {new Date(n.createdAt).toLocaleString('vi-VN')}
-                      </p>
-                    </div>
+                    <p className="m-0 mt-xxs text-micro text-stone">
+                      {new Date(n.createdAt).toLocaleString('vi-VN')}
+                    </p>
                   </div>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Badge, Card } from '@unihub/ui/components';
 import { getWorkshops, WorkshopSummary } from '../api/client';
 import { useSeatStream } from '../hooks/useSeatStream';
 
@@ -14,18 +15,11 @@ function SeatBadge({ workshopId, initialRemaining }: { workshopId: string; initi
   const remaining = seatData ? seatData.remainingSeats : initialRemaining;
 
   return (
-    <span
-      style={{
-        background: remaining > 0 ? '#22c55e' : '#ef4444',
-        color: '#fff',
-        borderRadius: 12,
-        padding: '2px 10px',
-        fontSize: 13,
-        fontWeight: 600,
-      }}
-    >
-      {remaining > 0 ? `Còn ${remaining} chỗ` : 'Hết chỗ'}
-      {connected && <span style={{ marginLeft: 6, opacity: 0.7 }}>●</span>}
+    <span className="flex items-center gap-xs">
+      <Badge variant={remaining > 0 ? 'tag-green' : 'tag-orange'}>
+        {remaining > 0 ? `Còn ${remaining} chỗ` : 'Hết chỗ'}
+      </Badge>
+      {connected && <span className="text-stone text-micro">●</span>}
     </span>
   );
 }
@@ -42,56 +36,57 @@ export function WorkshopListPage({ onSelect }: { onSelect: (id: string) => void 
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={styles.loading}>Đang tải danh sách workshop...</div>;
-  if (error) return <div style={styles.error}>Lỗi: {error}</div>;
+  if (loading) {
+    return (
+      <p className="text-center py-section text-slate text-body-md">
+        Đang tải danh sách workshop...
+      </p>
+    );
+  }
+  if (error) {
+    return (
+      <p className="text-center py-section text-semantic-error text-body-md">
+        Lỗi: {error}
+      </p>
+    );
+  }
 
   return (
-    <div style={styles.page}>
-      <h1 style={styles.heading}>🎓 Workshop Tuần lễ Kỹ năng & Nghề nghiệp</h1>
-      <div style={styles.grid}>
+    <div className="max-w-[1100px] mx-auto px-md py-xxl">
+      <h1 className="text-heading-2 text-ink mb-xxl">
+        Workshop Tuần lễ Kỹ năng &amp; Nghề nghiệp
+      </h1>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-lg">
         {workshops.map((w) => {
           const remaining = w.capacity - w.confirmedCount - w.heldCount;
           return (
-            <div key={w.id} style={styles.card} onClick={() => onSelect(w.id)}>
-              <div style={styles.cardHeader}>
-                <h2 style={styles.cardTitle}>{w.title}</h2>
+            <Card
+              key={w.id}
+              variant="base"
+              className="cursor-pointer"
+              onClick={() => onSelect(w.id)}
+            >
+              <div className="flex justify-between items-start gap-xs mb-xs">
+                <h2 className="text-body-md-medium text-ink flex-1">{w.title}</h2>
                 <SeatBadge workshopId={w.id} initialRemaining={remaining} />
               </div>
-              <p style={styles.speaker}>👤 {w.speakerName}</p>
-              <p style={styles.info}>🏛️ {w.roomName}</p>
-              <p style={styles.info}>🕐 {formatDate(w.startsAt)}</p>
-              <p style={styles.fee}>
+              <p className="text-body-sm text-slate my-xxs">👤 {w.speakerName}</p>
+              <p className="text-caption text-steel my-xxs">🏛️ {w.roomName}</p>
+              <p className="text-caption text-steel my-xxs">🕐 {formatDate(w.startsAt)}</p>
+              <p className="text-body-sm-medium text-ink mt-xs">
                 {w.feeType === 'FREE'
                   ? '🆓 Miễn phí'
                   : `💰 ${Number(w.price).toLocaleString('vi-VN')} đ`}
               </p>
-            </div>
+            </Card>
           );
         })}
         {workshops.length === 0 && (
-          <p style={styles.empty}>Hiện chưa có workshop nào đang mở đăng ký.</p>
+          <p className="text-stone col-span-full text-center py-section text-body-sm">
+            Hiện chưa có workshop nào đang mở đăng ký.
+          </p>
         )}
       </div>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  page: { maxWidth: 1100, margin: '0 auto', padding: '32px 16px' },
-  heading: { fontSize: 28, fontWeight: 700, marginBottom: 24, color: '#1e293b' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 },
-  card: {
-    background: '#fff', borderRadius: 12, padding: 20,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.08)', cursor: 'pointer',
-    transition: 'transform .15s, box-shadow .15s',
-    border: '1px solid #e2e8f0',
-  },
-  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 },
-  cardTitle: { fontSize: 16, fontWeight: 700, margin: 0, color: '#1e293b', flex: 1 },
-  speaker: { color: '#475569', margin: '4px 0', fontSize: 14 },
-  info: { color: '#64748b', margin: '2px 0', fontSize: 13 },
-  fee: { marginTop: 10, fontWeight: 600, color: '#0f172a', fontSize: 14 },
-  loading: { textAlign: 'center', padding: 60, color: '#64748b' },
-  error: { textAlign: 'center', padding: 60, color: '#ef4444' },
-  empty: { color: '#94a3b8', gridColumn: '1/-1', textAlign: 'center', padding: 40 },
-};

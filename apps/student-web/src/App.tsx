@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Button } from '@unihub/ui/components';
 import { WorkshopListPage } from './pages/WorkshopListPage';
 import { WorkshopDetailPage } from './pages/WorkshopDetailPage';
 import { MyRegistrationsPage } from './pages/MyRegistrationsPage';
@@ -28,50 +29,46 @@ export default function App() {
     return <LoginPage onLogin={setUser} />;
   }
 
-  const navLinkStyle = (active: boolean): React.CSSProperties => ({
-    color: active ? '#fff' : '#bfdbfe',
-    fontWeight: active ? 700 : 400,
-    fontSize: 14,
-    cursor: 'pointer',
-    padding: '4px 2px',
-    borderBottom: active ? '2px solid #fff' : '2px solid transparent',
-    background: 'none',
-    border: 'none',
-    borderBottomColor: active ? '#fff' : 'transparent',
-    borderBottomWidth: 2,
-    borderBottomStyle: 'solid',
-  });
-
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'Inter, system-ui, sans-serif' }}>
-      <nav style={{ background: '#3b82f6', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 60 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+    <div className="min-h-screen bg-surface font-sans">
+      <nav className="bg-brand-navy px-xl flex items-center justify-between h-[60px]">
+        <div className="flex items-center gap-xl">
           <span
-            style={{ color: '#fff', fontWeight: 700, fontSize: 20, cursor: 'pointer' }}
+            className="text-on-dark font-semibold text-body-md-medium cursor-pointer"
             onClick={() => { setTab('workshops'); setSelectedId(null); }}
           >
             UniHub Student
           </span>
           <button
-            style={navLinkStyle(tab === 'workshops' && !selectedId)}
+            className={`text-body-sm pb-xxs border-b-2 bg-transparent border-0 cursor-pointer transition-colors ${
+              tab === 'workshops' && !selectedId
+                ? 'text-on-dark border-on-dark font-semibold'
+                : 'text-on-dark-muted border-transparent'
+            }`}
             onClick={() => { setTab('workshops'); setSelectedId(null); }}
           >
             Workshop
           </button>
           <button
-            style={navLinkStyle(tab === 'my-registrations')}
+            className={`text-body-sm pb-xxs border-b-2 bg-transparent border-0 cursor-pointer transition-colors ${
+              tab === 'my-registrations'
+                ? 'text-on-dark border-on-dark font-semibold'
+                : 'text-on-dark-muted border-transparent'
+            }`}
             onClick={() => { setTab('my-registrations'); setSelectedId(null); }}
           >
             Đăng ký của tôi
           </button>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div className="flex items-center gap-lg">
           <NotificationBell />
-          <span style={{ color: '#eff6ff', fontSize: 14 }}>{user.fullName}</span>
-          <button onClick={logout} style={{ background: 'none', border: '1px solid #93c5fd', color: '#fff', padding: '4px 12px', borderRadius: 6, cursor: 'pointer', fontSize: 13 }}>Đăng xuất</button>
+          <span className="text-on-dark-muted text-body-sm">{user.fullName}</span>
+          <Button variant="secondary-on-dark" onClick={logout}>
+            Đăng xuất
+          </Button>
         </div>
       </nav>
-      <div style={{ padding: '28px 32px', maxWidth: 1000, margin: '0 auto' }}>
+      <div className="px-xxl py-xl max-w-[1000px] mx-auto">
         {paymentRegistrationId ? (
           <PaymentCheckoutPage
             registrationId={paymentRegistrationId}
