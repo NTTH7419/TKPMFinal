@@ -4,7 +4,7 @@ import { getWorkshop, WorkshopDetail, api } from '../api/client';
 import { useSeatStream } from '../hooks/useSeatStream';
 import { Skeleton } from '@unihub/ui';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faUser, faBuilding, faClock, faChair, faMoneyBillWave, faTag, faClipboardList, faMap, faSpinner, faCheckCircle, faBan, faCalendarCheck } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faUser, faBuilding, faClock, faChair, faMoneyBillWave, faTag, faClipboardList, faMap, faSpinner, faBan, faCalendarCheck, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import { ToastContainer } from '../components/Toast';
 import { useToast } from '../hooks/useToast';
 
@@ -18,6 +18,7 @@ export function WorkshopDetailPage() {
   const [workshop, setWorkshop] = useState<WorkshopDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [registering, setRegistering] = useState(false);
+  const [isRegistered, setIsRegistered] = useState(false);
   const { seatData } = useSeatStream(workshopId ?? null);
   const { toasts, addToast, removeToast } = useToast();
   const user = (() => {
@@ -28,7 +29,10 @@ export function WorkshopDetailPage() {
     if (!workshopId) return;
     setLoading(true);
     getWorkshop(workshopId)
-      .then(setWorkshop)
+      .then((data) => {
+        setWorkshop(data);
+        setIsRegistered(data.isRegistered);
+      })
       .finally(() => setLoading(false));
   }, [workshopId, user?.id]);
 
@@ -46,8 +50,10 @@ export function WorkshopDetailPage() {
       const res = await api.registerWorkshop(workshopId, idempotencyKey);
       if (res.status === 'CONFIRMED') {
         addToast('Đăng ký thành công!', 'success');
+        setIsRegistered(true);
       } else if (res.status === 'PENDING_PAYMENT') {
         addToast('Vui lòng thanh toán trong 10 phút!', 'info');
+        setIsRegistered(true);
         setTimeout(() => navigate(`/payment/${res.id}`), 500);
       }
     } catch (e: any) {
@@ -133,27 +139,34 @@ export function WorkshopDetailPage() {
           </div>
         )}
 
-        <button
-          onClick={handleRegister}
-          disabled={remaining === 0 || registering}
-          style={{
+        {isRegistered ? (
+          <div style={styles.registeredBadge}>
+            <FontAwesomeIcon icon={faCircleCheck} style={{ marginRight: 8 }} />
+            Đã đăng ký workshop này
+          </div>
+        ) : (
+          <button
+            onClick={handleRegister}
+            disabled={remaining === 0 || registering}
+            style={{
             ...styles.registerBtn,
-            opacity: remaining === 0 ? 1 : 1,
+            opacity: 1,
             background: remaining === 0
               ? '#e2e8f0'
               : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
             color: remaining === 0 ? '#94a3b8' : '#fff',
             cursor: remaining === 0 ? 'not-allowed' : registering ? 'wait' : 'pointer',
           }}
-        >
-          {registering ? (
+          >
+            {registering ? (
             <><FontAwesomeIcon icon={faSpinner} spin style={{ marginRight: 8 }} />Đang xử lý...</>
           ) : remaining === 0 ? (
             <><FontAwesomeIcon icon={faBan} style={{ marginRight: 8 }} />Đã hết chỗ</>
           ) : (
             <><FontAwesomeIcon icon={faCalendarCheck} style={{ marginRight: 8 }} />Đăng ký tham dự</>
           )}
-        </button>
+          </button>
+        )}
       </div>
     </div>
     <ToastContainer toasts={toasts} onRemove={removeToast} />
@@ -174,6 +187,12 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
     color: '#fff', border: 'none', borderRadius: 10,
     padding: '14px 32px', fontSize: 16, fontWeight: 600, cursor: 'pointer', width: '100%',
+  },
+  registeredBadge: {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10,
+    padding: '14px 32px', fontSize: 16, fontWeight: 600,
+    color: '#16a34a', width: '100%', boxSizing: 'border-box' as const,
   },
   loading: { textAlign: 'center', padding: 80, color: '#64748b' },
 };

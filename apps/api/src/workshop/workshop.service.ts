@@ -160,14 +160,29 @@ export class WorkshopService {
     return { data: workshops, total, page, limit };
   }
 
-  // ─── Task 3.7: Full workshop detail (public) ─────────────────────────────────
+  // ─── Task 3.7: Full workshop detail (public, with optional registration status) ─
 
-  async findOne(id: string) {
-    const workshop = await this.prisma.workshop.findUnique({
-      where: { id },
-    });
+  async findOne(id: string, userId?: string) {
+    const workshop = await this.prisma.workshop.findUnique({ where: { id } });
     if (!workshop) throw new NotFoundException('Workshop not found');
-    return workshop;
+
+    let isRegistered = false;
+    if (userId) {
+      const student = await this.prisma.student.findFirst({ where: { userId } });
+      if (student) {
+        const reg = await this.prisma.registration.findFirst({
+          where: {
+            workshopId: id,
+            studentId: student.id,
+            status: { in: ['PENDING_PAYMENT', 'CONFIRMED'] },
+          },
+          select: { id: true },
+        });
+        isRegistered = !!reg;
+      }
+    }
+
+    return { ...workshop, isRegistered };
   }
 
   // ─── Task 3.8: Admin stats ────────────────────────────────────────────────────

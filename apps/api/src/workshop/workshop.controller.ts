@@ -46,8 +46,9 @@ export class WorkshopController {
 
   // GET /workshops/:id
   @Get('workshops/:id')
-  findOne(@Param('id') id: string) {
-    return this.workshopService.findOne(id);
+  @UseGuards(JwtAuthGuard)
+  findOne(@Param('id') id: string, @CurrentUser() user: { sub: string }) {
+    return this.workshopService.findOne(id, user.sub);
   }
 
   // ─── Task 3.9: SSE endpoint — GET /workshops/:id/seats ───────────────────────

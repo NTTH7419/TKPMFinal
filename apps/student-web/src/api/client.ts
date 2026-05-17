@@ -68,6 +68,7 @@ export interface WorkshopDetail extends WorkshopSummary {
   roomMapUrl?: string;
   summaryStatus: string;
   aiSummary?: string;
+  isRegistered: boolean;
 }
 
 export interface MyRegistration {
@@ -140,3 +141,4 @@ export const api = {
   markNotificationRead: (id: string) =>
     apiFetch<{ ok: boolean }>(`/me/notifications/${id}/read`, { method: 'PATCH' }),
 };
+
