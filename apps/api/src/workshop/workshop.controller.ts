@@ -98,8 +98,8 @@ export class WorkshopController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ORGANIZER, Role.ADMIN)
   @RateLimit(RateLimitTier.ADMIN)
-  create(@Body() dto: CreateWorkshopDto, @CurrentUser() user: { id: string }) {
-    return this.workshopService.create(dto, user.id);
+  create(@Body() dto: CreateWorkshopDto, @CurrentUser() user: { sub: string }) {
+    return this.workshopService.create(dto, user.sub);
   }
 
   // PATCH /admin/workshops/:id
@@ -107,8 +107,8 @@ export class WorkshopController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ORGANIZER, Role.ADMIN)
   @RateLimit(RateLimitTier.ADMIN)
-  update(@Param('id') id: string, @Body() dto: UpdateWorkshopDto, @CurrentUser() user: { id: string }) {
-    return this.workshopService.update(id, dto, user.id);
+  update(@Param('id') id: string, @Body() dto: UpdateWorkshopDto, @CurrentUser() user: { sub: string }) {
+    return this.workshopService.update(id, dto, user.sub);
   }
 
   // POST /admin/workshops/:id/open
@@ -125,8 +125,8 @@ export class WorkshopController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ORGANIZER, Role.ADMIN)
   @RateLimit(RateLimitTier.ADMIN)
-  cancel(@Param('id') id: string, @CurrentUser() user: { id: string }) {
-    return this.workshopService.cancel(id, user.id);
+  cancel(@Param('id') id: string, @CurrentUser() user: { sub: string }) {
+    return this.workshopService.cancel(id, user.sub);
   }
 
   // GET /admin/workshops/:id/stats

@@ -15,9 +15,9 @@ export class LoadProtectionController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.STUDENT)
   issueQueueToken(
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { sub: string },
     @Param('id') workshopId: string,
   ) {
-    return this.queueTokenService.issueToken(user.id, workshopId);
+    return this.queueTokenService.issueToken(user.sub, workshopId);
   }
 }

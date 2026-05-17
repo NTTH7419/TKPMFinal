@@ -177,7 +177,7 @@ export function LoginPage() {
             fontSize: 12, color: '#64748b', lineHeight: 1.7,
           }}>
             <span style={{ fontWeight: 600, color: '#475569' }}>Tài khoản mẫu:</span><br />
-            student@unihub.edu.vn / Student@123
+            student1@unihub.edu.vn / Student@123
           </div>
         </div>
       </div>

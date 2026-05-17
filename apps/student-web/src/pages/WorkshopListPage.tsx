@@ -39,13 +39,17 @@ export function WorkshopListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const user = (() => {
+    try { return JSON.parse(localStorage.getItem('user') ?? 'null'); } catch { return null; }
+  })();
 
   useEffect(() => {
+    setLoading(true);
     getWorkshops()
       .then((res) => setWorkshops(res.data))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user?.id]);
 
   if (loading) return (
     <div style={styles.page}>

@@ -20,24 +20,24 @@ export class RegistrationController {
   @Roles(Role.STUDENT)
   @RateLimit(RateLimitTier.REGISTRATION)
   register(
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { sub: string },
     @Body() dto: CreateRegistrationDto,
   ) {
-    return this.registrationService.register(user.id, dto);
+    return this.registrationService.register(user.sub, dto);
   }
 
   // GET /me/registrations — authenticated student
   @Get('me/registrations')
-  getMyRegistrations(@CurrentUser() user: { id: string }) {
-    return this.registrationService.getMyRegistrations(user.id);
+  getMyRegistrations(@CurrentUser() user: { sub: string }) {
+    return this.registrationService.getMyRegistrations(user.sub);
   }
 
   // GET /me/registrations/:id/qr — authenticated student
   @Get('me/registrations/:id/qr')
   getQrCode(
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { sub: string },
     @Param('id') id: string,
   ) {
-    return this.registrationService.getQrCode(user.id, id);
+    return this.registrationService.getQrCode(user.sub, id);
   }
 }

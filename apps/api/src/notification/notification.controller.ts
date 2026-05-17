@@ -10,17 +10,17 @@ export class NotificationController {
 
   // ─── Task 7.7: List notifications ─────────────────────────────────────────────
   @Get('me/notifications')
-  async getMyNotifications(@CurrentUser() user: { userId: string }) {
-    return this.notificationService.getMyNotifications(user.userId);
+  async getMyNotifications(@CurrentUser() user: { sub: string }) {
+    return this.notificationService.getMyNotifications(user.sub);
   }
 
   // ─── Task 7.8: Mark as read ───────────────────────────────────────────────────
   @Patch('me/notifications/:id/read')
   async markRead(
-    @CurrentUser() user: { userId: string },
+    @CurrentUser() user: { sub: string },
     @Param('id') id: string,
   ) {
-    await this.notificationService.markAsRead(user.userId, id);
+    await this.notificationService.markAsRead(user.sub, id);
     return { ok: true };
   }
 }

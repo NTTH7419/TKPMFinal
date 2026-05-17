@@ -20,13 +20,17 @@ export function WorkshopDetailPage() {
   const [registering, setRegistering] = useState(false);
   const { seatData } = useSeatStream(workshopId ?? null);
   const { toasts, addToast, removeToast } = useToast();
+  const user = (() => {
+    try { return JSON.parse(localStorage.getItem('user') ?? 'null'); } catch { return null; }
+  })();
 
   useEffect(() => {
     if (!workshopId) return;
+    setLoading(true);
     getWorkshop(workshopId)
       .then(setWorkshop)
       .finally(() => setLoading(false));
-  }, [workshopId]);
+  }, [workshopId, user?.id]);
 
   const handleRegister = async () => {
     if (!workshopId) return;

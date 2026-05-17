@@ -93,13 +93,18 @@ export function MyRegistrationsPage() {
   const [error, setError] = useState('');
   const [qrForId, setQrForId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const user = (() => {
+    try { return JSON.parse(localStorage.getItem('user') ?? 'null'); } catch { return null; }
+  })();
 
   useEffect(() => {
+    setLoading(true);
+    setError('');
     api.getMyRegistrations()
       .then(setRegistrations)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user?.id]);
 
   if (loading) return (
     <div>
