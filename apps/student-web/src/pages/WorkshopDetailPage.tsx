@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getWorkshop, WorkshopDetail, api } from '../api/client';
 import { useSeatStream } from '../hooks/useSeatStream';
 import { Skeleton } from '@unihub/ui';
+import { MarkdownSummary } from '@unihub/ui/components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faUser, faBuilding, faClock, faChair, faMoneyBillWave, faTag, faClipboardList, faMap, faSpinner, faBan, faCalendarCheck, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import { ToastContainer } from '../components/Toast';
@@ -126,7 +127,7 @@ export function WorkshopDetailPage() {
             <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>
               <FontAwesomeIcon icon={faClipboardList} style={{ marginRight: 8, color: '#6366f1' }} />Tóm tắt nội dung
             </h3>
-            <p style={{ margin: 0, color: '#475569', lineHeight: 1.6 }}>{workshop.aiSummary}</p>
+            <MarkdownSummary content={workshop.aiSummary} />
           </div>
         )}
 

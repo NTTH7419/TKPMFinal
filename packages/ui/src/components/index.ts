@@ -10,6 +10,9 @@ export type { TextInputProps, SearchPillProps } from './Input';
 export { Badge } from './Badge';
 export type { BadgeProps, BadgeVariant } from './Badge';
 
+export { MarkdownSummary } from './MarkdownSummary';
+export type { MarkdownSummaryProps } from './MarkdownSummary';
+
 export {
   PillTabGroup,
   PillTab,
