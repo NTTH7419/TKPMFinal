@@ -188,8 +188,8 @@ export class AiSummaryProcessor extends WorkerHost {
     for (let i = 0; i < chunks.length; i++) {
       const prompt =
         chunks.length === 1
-          ? `Summarise the following workshop document in clear, concise paragraphs suitable for students:\n\n${chunks[i]}`
-          : `This is part ${i + 1} of ${chunks.length} of a workshop document. Summarise this section:\n\n${chunks[i]}`;
+          ? `You are a workshop document summariser. Summarise the following document for students.\n\nRules:\n- Respond in Markdown format (use headings, bullet points, bold text where appropriate).\n- Start your response DIRECTLY with the content — do NOT include any introductory sentence such as "Here is a summary…" or "Below is an overview…".\n- Do NOT add any closing remark or conclusion sentence at the end.\n- Be concise and focused on key information only.\n\nDocument:\n${chunks[i]}`
+          : `You are a workshop document summariser. Summarise part ${i + 1} of ${chunks.length} of the following document for students.\n\nRules:\n- Respond in Markdown format (use headings, bullet points, bold text where appropriate).\n- Start your response DIRECTLY with the content — do NOT include any introductory sentence such as "Here is part ${i + 1}…" or "This section covers…".\n- Do NOT add any closing remark or conclusion sentence at the end.\n- Be concise and focused on key information only.\n\nDocument section:\n${chunks[i]}`;
 
       const result = await Promise.race([
         model.generateContent(prompt),
