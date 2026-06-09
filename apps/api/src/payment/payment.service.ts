@@ -169,7 +169,7 @@ export class PaymentService {
     }
 
     // Normal flow: update payment and registration
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: any) => {
       // Update payment status
       await tx.payment.update({
         where: { id: payment.id },

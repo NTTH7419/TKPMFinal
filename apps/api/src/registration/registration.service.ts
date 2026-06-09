@@ -48,7 +48,7 @@ export class RegistrationService {
     }
 
     // ── Task 4.3: Row-lock transaction ──
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx: any) => {
       // SELECT ... FOR UPDATE — row-level lock prevents concurrent double-booking
       const workshop = await tx.$queryRaw<
         Array<{

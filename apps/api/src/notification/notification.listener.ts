@@ -138,7 +138,7 @@ export class NotificationListener {
     });
 
     await Promise.allSettled(
-      registrations.map(async (reg) => {
+      registrations.map(async (reg: { id: string; studentId: string; status: string }) => {
         const recipient = await this.resolveStudentUser(reg.studentId);
         if (!recipient) return;
 

@@ -256,7 +256,7 @@ export class WorkshopService {
       orderBy: { createdAt: 'asc' },
     });
     return {
-      data: registrations.map(r => ({
+      data: registrations.map((r: any) => ({
         id: r.id,
         status: r.status,
         createdAt: r.createdAt,

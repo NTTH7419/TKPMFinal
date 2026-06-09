@@ -23,7 +23,7 @@ export class CheckinService {
     return {
       workshopId,
       hmacSecret: this.config.get<string>('HMAC_QR_SECRET', ''),
-      roster: registrations.map((r) => ({
+      roster: registrations.map((r: { id: string; studentId: string; qrTokenHash: string | null }) => ({
         registrationId: r.id,
         studentId: r.studentId,
         qrTokenHash: r.qrTokenHash ?? '',

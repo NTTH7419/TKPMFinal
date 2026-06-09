@@ -52,7 +52,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const roles = user.userRoles.map((ur) => ur.role.code);
+    const roles = user.userRoles.map((ur: { role: { code: string } }) => ur.role.code);
     const { accessToken, refreshToken, jti } = await this.generateTokenPair(user.id, roles);
 
     // Set refresh token as HTTP-only cookie
@@ -114,7 +114,7 @@ export class AuthService {
       throw new ForbiddenException('Account is locked');
     }
 
-    const roles = user.userRoles.map((ur) => ur.role.code);
+    const roles = user.userRoles.map((ur: { role: { code: string } }) => ur.role.code);
     const { accessToken, refreshToken: newRefreshToken } = await this.generateTokenPair(user.id, roles);
 
     // Issue new refresh token cookie

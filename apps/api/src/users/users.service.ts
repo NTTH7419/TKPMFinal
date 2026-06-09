@@ -67,12 +67,12 @@ export class UsersService {
     ]);
 
     return {
-      data: users.map((u) => ({
+      data: users.map((u: any) => ({
         id: u.id,
         email: u.email,
         fullName: u.fullName,
         status: u.status,
-        roles: u.userRoles.map((ur) => ur.role.code),
+        roles: u.userRoles.map((ur: { role: { code: string } }) => ur.role.code),
         createdAt: u.createdAt,
       })),
       total,

@@ -289,7 +289,7 @@ export class StudentImportService {
     const validRowData = rows.filter((r) => r.rowStatus === 'VALID');
     const validStudentCodes = validRowData.map((r) => r.studentCode);
 
-    await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx: any) => {
       for (const row of validRowData) {
         const student = await tx.student.upsert({
           where: { studentCode: row.studentCode },
